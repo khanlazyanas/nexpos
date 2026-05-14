@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { IProduct } from '@/types';
-import { Plus, Edit, Trash2, X, PackageOpen, Box } from 'lucide-react';
+import { Plus, Edit, Trash2, X, PackageOpen, Box, Sparkles } from 'lucide-react';
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<IProduct[]>([]);
@@ -65,52 +65,57 @@ export default function InventoryPage() {
     }
   };
 
-  // Premium Skeleton for Table Rows
+  // Premium SaaS Skeleton for Table Rows
   const TableSkeleton = () => (
     <>
       {[1, 2, 3, 4, 5].map((i) => (
-        <tr key={i} className="border-b border-gray-100/50">
-          <td className="p-4"><div className="h-5 bg-gray-200/60 rounded-md w-3/4 animate-pulse"></div></td>
-          <td className="p-4"><div className="h-4 bg-gray-200/60 rounded-md w-1/2 animate-pulse"></div></td>
-          <td className="p-4"><div className="h-5 bg-gray-200/60 rounded-md w-1/3 animate-pulse"></div></td>
-          <td className="p-4"><div className="h-6 bg-gray-200/60 rounded-full w-24 animate-pulse"></div></td>
-          <td className="p-4"><div className="h-6 bg-gray-200/60 rounded-md w-16 animate-pulse"></div></td>
+        <tr key={i} className="border-b border-gray-100/30">
+          <td className="p-6"><div className="h-5 bg-gray-200/50 rounded-lg w-3/4 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-4 bg-gray-200/50 rounded-lg w-1/2 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-6 bg-gray-200/50 rounded-lg w-1/3 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-7 bg-gray-200/50 rounded-full w-24 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-8 bg-gray-200/50 rounded-lg w-16 animate-pulse"></div></td>
         </tr>
       ))}
     </>
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 relative z-10">
       
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">Inventory</h1>
-          <p className="text-gray-500 font-medium flex items-center gap-2 mt-1">
-            Manage your store's products and stock <Box size={16} className="text-emerald-500" />
+          <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-br from-gray-900 via-emerald-900 to-teal-700 bg-clip-text text-transparent tracking-tighter">
+            Inventory
+          </h1>
+          <p className="text-gray-500 font-medium flex items-center gap-2 mt-2 text-lg">
+            Manage your store's products and stock <Box size={18} className="text-emerald-500" />
           </p>
         </div>
+        
+        {/* Magic Shine Add Button */}
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-emerald-200 hover:shadow-emerald-300 hover:-translate-y-0.5 font-semibold"
+          className="group relative overflow-hidden flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-6px_rgba(16,185,129,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 transition-all duration-300"
         >
-          <Plus size={20} />
-          <span>Add Product</span>
+          <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"></div>
+          <Plus size={20} className="relative z-10" strokeWidth={3} />
+          <span className="relative z-10">Add Product</span>
         </button>
       </div>
 
-      {/* Premium Glassmorphism Table Section */}
-      <div className="bg-white/70 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Premium Glassmorphism Table Area */}
+      <div className="bg-white/60 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 text-sm uppercase tracking-wider">
-                <th className="p-5 font-bold">Product Name</th>
-                <th className="p-5 font-bold">Barcode/SKU</th>
-                <th className="p-5 font-bold">Price (₹)</th>
-                <th className="p-5 font-bold">Stock Status</th>
-                <th className="p-5 font-bold text-right">Actions</th>
+              <tr className="bg-gray-50/40 border-b border-gray-100/60 text-gray-400 text-xs uppercase tracking-widest">
+                <th className="p-6 font-black">Product Name</th>
+                <th className="p-6 font-black">Barcode/SKU</th>
+                <th className="p-6 font-black">Price (₹)</th>
+                <th className="p-6 font-black">Stock Status</th>
+                <th className="p-6 font-black text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -118,35 +123,42 @@ export default function InventoryPage() {
                 <TableSkeleton />
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-12 text-center">
+                  <td colSpan={5} className="p-16 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-400">
-                      <PackageOpen size={48} className="mb-3 opacity-50" />
-                      <p className="text-lg font-medium text-gray-600">No products found</p>
-                      <p className="text-sm">Click on 'Add Product' to get started.</p>
+                      <div className="w-24 h-24 bg-gray-100/50 rounded-full flex items-center justify-center mb-4">
+                        <PackageOpen size={48} className="opacity-50 text-emerald-600" />
+                      </div>
+                      <p className="text-xl font-bold text-gray-700 mb-1">No products found</p>
+                      <p className="text-sm font-medium">Click on 'Add Product' to stock your shelves.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 products.map((product) => (
-                  <tr key={product._id} className="border-b border-gray-50/50 hover:bg-white/60 transition-colors group">
-                    <td className="p-5 font-bold text-gray-800">{product.name}</td>
-                    <td className="p-5 text-gray-500 font-medium font-mono text-sm">{product.barcode_sku}</td>
-                    <td className="p-5 text-gray-900 font-black">₹{product.price.toLocaleString()}</td>
-                    <td className="p-5">
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${
+                  <tr key={product._id} className="border-b border-gray-100/30 hover:bg-white/80 transition-colors group">
+                    <td className="p-6 font-extrabold text-gray-800 text-lg">{product.name}</td>
+                    <td className="p-6 text-gray-400 font-bold font-mono text-sm tracking-wide">{product.barcode_sku}</td>
+                    <td className="p-6 text-emerald-700 font-black text-lg">₹{product.price.toLocaleString()}</td>
+                    <td className="p-6">
+                      <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border ${
                         product.stock_quantity > 10 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
                           : product.stock_quantity > 0
-                            ? 'bg-orange-50 text-orange-700 border-orange-200'
-                            : 'bg-red-50 text-red-700 border-red-200'
+                            ? 'bg-amber-50 border-amber-100 text-amber-600'
+                            : 'bg-rose-50 border-rose-100 text-rose-600'
                       }`}>
-                        {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : 'Out of Stock'}
-                      </span>
+                        {product.stock_quantity > 0 ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-current"></span>
+                            {product.stock_quantity} left
+                          </>
+                        ) : 'Out of Stock'}
+                      </div>
                     </td>
-                    <td className="p-5">
+                    <td className="p-6">
                       <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit size={18} /></button>
-                        <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                        <button className="p-2.5 text-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"><Edit size={18} strokeWidth={2.5} /></button>
+                        <button className="p-2.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"><Trash2 size={18} strokeWidth={2.5} /></button>
                       </div>
                     </td>
                   </tr>
@@ -157,73 +169,85 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Premium Glass Modal */}
+      {/* Ultra-Premium Glass Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-in fade-in duration-200">
-          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => !isSubmitting && setIsModalOpen(false)}></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-in fade-in zoom-in-95 duration-300">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => !isSubmitting && setIsModalOpen(false)}></div>
           
-          <div className="relative w-full max-w-md bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 p-6 transform transition-all">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-extrabold text-gray-900">Add Product</h2>
-                <p className="text-sm text-gray-500 font-medium">Add a new item to your inventory</p>
+          <div className="relative w-full max-w-lg bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] border border-white p-8 overflow-hidden">
+            {/* Modal Background Glow */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="flex justify-between items-center mb-8 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-2.5 rounded-xl text-white shadow-lg shadow-emerald-200">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">Add Product</h2>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Inventory Management</p>
+                </div>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors"
+                className="p-2.5 bg-white border border-gray-100 hover:bg-gray-50 text-gray-500 rounded-full transition-colors shadow-sm"
               >
-                <X size={20} />
+                <X size={20} strokeWidth={2.5} />
               </button>
             </div>
 
-            <form onSubmit={handleAddProduct} className="space-y-5">
+            <form onSubmit={handleAddProduct} className="space-y-5 relative z-10">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Product Name</label>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Product Name</label>
                 <input 
-                  type="text" required placeholder="e.g. Logitech Wireless Mouse"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-medium text-gray-800 placeholder:text-gray-400"
+                  type="text" required placeholder="e.g. Mechanical Keyboard"
+                  className="w-full bg-white/50 border border-gray-200 rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 placeholder:text-gray-300 placeholder:font-medium shadow-sm"
                   value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Barcode / SKU</label>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Barcode / SKU</label>
                 <input 
-                  type="text" required placeholder="e.g. LOGI-M-001"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-medium text-gray-800 placeholder:text-gray-400"
+                  type="text" required placeholder="e.g. KEY-MEC-001"
+                  className="w-full bg-white/50 border border-gray-200 rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 placeholder:text-gray-300 placeholder:font-medium shadow-sm"
                   value={formData.barcode_sku} onChange={(e) => setFormData({...formData, barcode_sku: e.target.value})}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Price (₹)</label>
-                  <input 
-                    type="number" required min="0" placeholder="0.00"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-medium text-gray-800"
-                    value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  />
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                    <input 
+                      type="number" required min="0" placeholder="0"
+                      className="w-full bg-white/50 border border-gray-200 rounded-2xl pl-8 p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 shadow-sm"
+                      value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Stock Quantity</label>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Stock Qty</label>
                   <input 
                     type="number" required min="0" placeholder="0"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-medium text-gray-800"
+                    className="w-full bg-white/50 border border-gray-200 rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 shadow-sm"
                     value={formData.stock_quantity} onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
                   />
                 </div>
               </div>
               
-              <div className="pt-2 flex gap-3">
+              <div className="pt-4 flex gap-4">
                 <button 
                   type="button" onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 px-4 text-gray-700 bg-gray-100 hover:bg-gray-200 font-bold rounded-xl transition-colors"
+                  className="flex-1 py-4 px-4 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 font-bold rounded-2xl transition-all shadow-sm"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" disabled={isSubmitting}
-                  className="flex-1 py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group flex-1 relative overflow-hidden py-4 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-2xl transition-all shadow-[0_8px_20px_-6px_rgba(16,185,129,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Product'}
+                  <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"></div>
+                  <span className="relative z-10">{isSubmitting ? 'Saving...' : 'Save Product'}</span>
                 </button>
               </div>
             </form>
