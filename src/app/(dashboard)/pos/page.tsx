@@ -9,9 +9,10 @@ export default function POSPage() {
   const [products, setProducts] = useState<IProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCheckingOut, setIsCheckingOut] = useState(false); // Checkout loading state
 
-  // Zustand Store se functions aur data nikalna
-  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal } = useCartStore();
+  // Zustand Store se functions aur data nikalna (clearCart add kiya)
+  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCartStore();
 
   useEffect(() => {
     fetchProducts();
@@ -29,6 +30,37 @@ export default function POSPage() {
     }
   };
 
+  // Naya Checkout Function
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
+    setIsCheckingOut(true);
+
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart,
+          totalAmount: cartTotal()
+        })
+      });
+
+      if (response.ok) {
+        alert('🎉 Bill Successfully Ban Gaya! Stock update ho gaya.');
+        clearCart(); // Cart khali karein
+        fetchProducts(); // Products list ko refresh karein taaki naya stock dikhe
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Checkout fail ho gaya!');
+      }
+    } catch (error) {
+      console.error("Checkout Error:", error);
+      alert('Kuch technical problem aa gayi.');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
   // Search filter
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -38,9 +70,8 @@ export default function POSPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
       
-      {/* LEFT SIDE: Products Section (70% width) */}
+      {/* LEFT SIDE: Products Section */}
       <div className="w-full lg:w-2/3 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Header & Search */}
         <div className="p-4 border-b border-gray-100 flex gap-4 items-center bg-gray-50">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -54,7 +85,6 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Product Grid */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <p className="text-center text-gray-500 mt-10">Loading products...</p>
@@ -85,7 +115,7 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* RIGHT SIDE: Cart / Billing Section (30% width) */}
+      {/* RIGHT SIDE: Cart / Billing Section */}
       <div className="w-full lg:w-1/3 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -96,7 +126,6 @@ export default function POSPage() {
           </span>
         </div>
 
-        {/* Cart Items List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
@@ -111,7 +140,6 @@ export default function POSPage() {
                   <p className="font-bold text-emerald-600 text-sm">₹{item.price}</p>
                 </div>
                 
-                {/* Quantity Controls */}
                 <div className="flex items-center gap-3 ml-4">
                   <button 
                     onClick={() => updateQuantity(item._id, item.cartQuantity - 1)}
@@ -144,18 +172,18 @@ export default function POSPage() {
           )}
         </div>
 
-        {/* Checkout Section */}
         <div className="p-4 border-t border-gray-100 bg-gray-50">
           <div className="flex justify-between items-center mb-4">
             <span className="text-gray-500 font-medium">Total Amount</span>
             <span className="text-2xl font-bold text-gray-800">₹{cartTotal().toLocaleString()}</span>
           </div>
           <button 
-            disabled={cart.length === 0}
+            onClick={handleCheckout}
+            disabled={cart.length === 0 || isCheckingOut}
             className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm"
           >
             <CreditCard size={20} />
-            Checkout & Pay
+            {isCheckingOut ? 'Processing...' : 'Checkout & Pay'}
           </button>
         </div>
       </div>
