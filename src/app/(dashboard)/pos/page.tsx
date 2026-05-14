@@ -68,7 +68,7 @@ export default function POSPage() {
                     product.stock_quantity === 0 ? 'opacity-50 bg-gray-50 cursor-not-allowed' : 'bg-white hover:border-emerald-400'
                   }`}
                 >
-                  <h3 className="font-semibold text-gray-800 line-clamp-2 min-h-[48px]">{product.name}</h3>
+                  <h3 className="font-semibold text-gray-800 line-clamp-2 min-h-12">{product.name}</h3>
                   <p className="text-xs text-gray-500 mt-1">{product.barcode_sku}</p>
                   <div className="flex justify-between items-center mt-4">
                     <span className="font-bold text-emerald-600">₹{product.price}</span>
