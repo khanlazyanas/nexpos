@@ -3,15 +3,16 @@ import connectToDatabase from '@/lib/db';
 import Product from '@/models/Product';
 
 // UPDATE (Edit) Product
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
-    const { id } = params;
     
-    // Frontend se naya data lena
+    // Naya Next.js Rule: Params ko await karna padta hai
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+    
     const data = await req.json();
 
-    // Database me id dhoondh kar update karna
     const updatedProduct = await Product.findByIdAndUpdate(id, data, { new: true });
 
     if (!updatedProduct) {
@@ -26,12 +27,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 // DELETE Product
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    
+    // Naya Next.js Rule: Params ko await karna padta hai
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
 
-    // Database se product ko hamesha ke liye uda dena
     const deletedProduct = await Product.findByIdAndDelete(id);
 
     if (!deletedProduct) {
