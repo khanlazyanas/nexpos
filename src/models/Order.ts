@@ -8,11 +8,24 @@ const OrderItemSchema = new mongoose.Schema({
   quantity: { type: Number, required: true }
 });
 
-// Pure Bill/Order ka structure
+// Pure Bill/Order ka naya Advanced structure
 const OrderSchema = new mongoose.Schema({
+  orderId: { type: String, required: true, unique: true }, // Auto-generated Bill Number
+  
+  // Naye Customer Details
+  customerName: { type: String, default: 'Guest' },
+  customerMobile: { type: String, default: '' },
+  
   items: [OrderItemSchema],
+  
+  // Finance Calculation
+  subTotal: { type: Number, required: true },
+  discount: { type: Number, default: 0 },
+  tax: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
-  paymentMethod: { type: String, default: 'Cash' }
+  
+  // Payment Option
+  paymentMethod: { type: String, enum: ['Cash', 'Card', 'UPI'], default: 'Cash' }
 }, { 
   timestamps: true // Ye automatically bill banne ka time aur date save karega
 });

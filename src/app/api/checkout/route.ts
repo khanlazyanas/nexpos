@@ -7,8 +7,19 @@ export async function POST(req: Request) {
   try {
     await connectToDatabase();
     
-    // Frontend se cart items aur total amount lena
-    const { items, totalAmount } = await req.json();
+    // Frontend se saara Advanced data lena
+    const body = await req.json();
+    const { 
+      items, 
+      totalAmount,
+      orderId,
+      customerName,
+      customerMobile,
+      subTotal,
+      discount,
+      tax,
+      paymentMethod
+    } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart empty hai' }, { status: 400 });
@@ -22,11 +33,17 @@ export async function POST(req: Request) {
       quantity: item.cartQuantity
     }));
 
-    // 2. Naya Order (Bill) save karna
+    // 2. Naya Advanced Order (Bill) save karna
     const newOrder = await Order.create({
+      orderId,
+      customerName: customerName || 'Guest',
+      customerMobile: customerMobile || '',
       items: orderItems,
-      totalAmount: totalAmount,
-      paymentMethod: 'Cash' // Abhi ke liye default Cash rakh rahe hain
+      subTotal,
+      discount,
+      tax,
+      totalAmount,
+      paymentMethod: paymentMethod || 'Cash'
     });
 
     // 3. Products ka Stock kam karna (Loop chala kar)
