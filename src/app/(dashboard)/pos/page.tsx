@@ -142,7 +142,7 @@ export default function POSPage() {
 
       // Razorpay Popup Settings
       const options = {
-        key: 'rzp_test_mGL7MB3OwXoVvfrCIuwycBkX', // Jab asli account banayenge tab isko change karenge
+        key: 'rzp_test_8YGiWeZrGctMwH',
         amount: orderData.order.amount,
         currency: orderData.order.currency,
         name: 'NexPOS Store',
