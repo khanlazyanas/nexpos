@@ -2,16 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { IProduct } from '@/types';
-import { useCartStore } from '@/store/useCartStore';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, ScanBarcode, Receipt, Sparkles, Zap } from 'lucide-react';
+import { Plus, Edit, Trash2, X, PackageOpen, Box, Sparkles } from 'lucide-react';
 
-export default function POSPage() {
+export default function InventoryPage() {
   const [products, setProducts] = useState<IProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-
-  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCartStore();
+  
+  // Modal aur Form States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null); // Naya state track karne ke liye ki Edit kar rahe hain ya Add
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    barcode_sku: '',
+    price: '',
+    stock_quantity: ''
+  });
 
   useEffect(() => {
     fetchProducts();
@@ -29,235 +36,281 @@ export default function POSPage() {
     }
   };
 
-  const handleCheckout = async () => {
-    if (cart.length === 0) return;
-    setIsCheckingOut(true);
+  // Add ke liye modal kholna
+  const openAddModal = () => {
+    setFormData({ name: '', barcode_sku: '', price: '', stock_quantity: '' });
+    setEditingId(null);
+    setIsModalOpen(true);
+  };
+
+  // Edit ke liye modal kholna aur purana data bharna
+  const openEditModal = (product: IProduct) => {
+    setFormData({
+      name: product.name,
+      barcode_sku: product.barcode_sku,
+      price: product.price.toString(),
+      stock_quantity: product.stock_quantity.toString()
+    });
+    setEditingId(product._id);
+    setIsModalOpen(true);
+  };
+
+  // Product Delete karna
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    try {
+      const response = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchProducts(); // Table refresh karein
+      } else {
+        alert('Delete fail ho gaya!');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
+
+  // Naya Product Save karna YA Purana Update karna
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
+      // Agar editingId hai toh PUT (Update), nahi toh POST (Add)
+      const url = editingId ? `/api/products/${editingId}` : '/api/products';
+      const method = editingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart,
-          totalAmount: cartTotal()
+          name: formData.name,
+          barcode_sku: formData.barcode_sku,
+          price: Number(formData.price),
+          stock_quantity: Number(formData.stock_quantity)
         })
       });
 
       if (response.ok) {
-        alert('🎉 Bill Successfully Ban Gaya! Stock update ho gaya.');
-        clearCart();
+        setFormData({ name: '', barcode_sku: '', price: '', stock_quantity: '' });
+        setEditingId(null);
+        setIsModalOpen(false);
         fetchProducts(); 
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Checkout fail ho gaya!');
+        alert(errorData.error || 'Kuch galat ho gaya!');
       }
     } catch (error) {
-      console.error("Checkout Error:", error);
-      alert('Kuch technical problem aa gayi.');
+      console.error("Save error:", error);
+      alert('Action fail ho gaya.');
     } finally {
-      setIsCheckingOut(false);
+      setIsSubmitting(false);
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.barcode_sku.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Premium SaaS Skeleton
-  const ProductSkeleton = () => (
-    <div className="bg-white/80 border border-gray-100 shadow-sm rounded-[1.5rem] p-6 animate-pulse">
-      <div className="h-12 bg-gray-200/60 rounded-xl mb-4"></div>
-      <div className="h-4 w-3/4 bg-gray-200/60 rounded-lg mb-8"></div>
-      <div className="flex justify-between items-end">
-        <div className="h-8 w-20 bg-gray-200/60 rounded-lg"></div>
-        <div className="h-6 w-24 bg-gray-200/60 rounded-full"></div>
-      </div>
-    </div>
+  // Premium SaaS Skeleton for Table Rows
+  const TableSkeleton = () => (
+    <>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <tr key={i} className="border-b border-gray-100/30">
+          <td className="p-6"><div className="h-5 bg-gray-200/50 rounded-lg w-3/4 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-4 bg-gray-200/50 rounded-lg w-1/2 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-6 bg-gray-200/50 rounded-lg w-1/3 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-7 bg-gray-200/50 rounded-full w-24 animate-pulse"></div></td>
+          <td className="p-6"><div className="h-8 bg-gray-200/50 rounded-lg w-16 animate-pulse"></div></td>
+        </tr>
+      ))}
+    </>
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)] relative z-10 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 relative z-10">
       
-      {/* LEFT SIDE: Products Section (Now in a matching Glass Panel) */}
-      <div className="flex-1 flex flex-col bg-white/60 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden h-full">
-        
-        {/* Header & Floating Search */}
-        <div className="p-6 md:p-8 pb-6 border-b border-white/50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between z-10 bg-white/30">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-br from-gray-900 via-emerald-900 to-teal-700 bg-clip-text text-transparent tracking-tighter mb-1">
-              Terminal
-            </h1>
-            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-              <Zap size={14} className="text-emerald-500" /> Point of Sale
-            </p>
-          </div>
-
-          <div className="relative group w-full sm:w-[350px] md:w-[400px]">
-            <div className="absolute inset-0 bg-emerald-400/20 blur-xl rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
-            <div className="relative bg-white/80 backdrop-blur-xl border border-white shadow-sm rounded-2xl p-1.5 flex items-center transition-all group-focus-within:bg-white group-focus-within:shadow-md">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-2.5 rounded-xl text-gray-400 ml-1 shadow-inner border border-gray-100/50">
-                <ScanBarcode size={20} />
-              </div>
-              <input 
-                type="text" 
-                placeholder="Search products or SKU..." 
-                className="w-full bg-transparent pl-4 pr-4 py-2 outline-none text-gray-800 font-bold placeholder:text-gray-400 placeholder:font-medium"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-br from-gray-900 via-emerald-900 to-teal-700 bg-clip-text text-transparent tracking-tighter">
+            Inventory
+          </h1>
+          <p className="text-gray-500 font-medium flex items-center gap-2 mt-2 text-lg">
+            Manage your store's products and stock <Box size={18} className="text-emerald-500" />
+          </p>
         </div>
+        
+        {/* Magic Shine Add Button */}
+        <button 
+          onClick={openAddModal}
+          className="group relative overflow-hidden flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-6px_rgba(16,185,129,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 transition-all duration-300"
+        >
+          <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"></div>
+          <Plus size={20} className="relative z-10" strokeWidth={3} />
+          <span className="relative z-10">Add Product</span>
+        </button>
+      </div>
 
-        {/* Product Grid Area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-          {loading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <ProductSkeleton key={i} />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {filteredProducts.map(product => {
-                const isOutOfStock = product.stock_quantity === 0;
-                return (
-                  <div 
-                    key={product._id} 
-                    onClick={() => !isOutOfStock && addToCart(product)}
-                    className={`group relative overflow-hidden rounded-[1.5rem] p-6 transition-all duration-300 border ${
-                      isOutOfStock 
-                        ? 'bg-gray-50/50 border-gray-200/50 opacity-60 cursor-not-allowed grayscale' 
-                        : 'bg-white border-white shadow-sm hover:shadow-[0_12px_30px_-10px_rgba(16,185,129,0.2)] hover:-translate-y-1 hover:border-emerald-100 cursor-pointer'
-                    }`}
-                  >
-                    {!isOutOfStock && (
-                      <div className="absolute top-0 right-0 -mt-6 -mr-6 w-24 h-24 bg-emerald-400/10 rounded-full blur-2xl group-hover:bg-emerald-400/20 transition-all duration-500"></div>
-                    )}
-                    
-                    <h3 className="font-extrabold text-gray-800 line-clamp-2 min-h-[3rem] text-lg leading-tight relative z-10">{product.name}</h3>
-                    <p className="text-[11px] font-bold font-mono text-gray-400 mt-2 mb-5 relative z-10 tracking-widest uppercase bg-gray-50 inline-block px-2 py-1 rounded-md border border-gray-100">{product.barcode_sku}</p>
-                    
-                    <div className="flex justify-between items-end relative z-10">
-                      <span className="font-black text-2xl text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">₹{product.price}</span>
-                      <span className={`text-[10px] px-2.5 py-1.5 rounded-lg font-black uppercase tracking-widest border ${
-                        isOutOfStock ? 'bg-rose-50 border-rose-100 text-rose-500' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                      }`}>
-                        {isOutOfStock ? 'Empty' : `${product.stock_quantity} Left`}
-                      </span>
+      {/* Premium Glassmorphism Table Area */}
+      <div className="bg-white/60 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/40 border-b border-gray-100/60 text-gray-400 text-xs uppercase tracking-widest">
+                <th className="p-6 font-black">Product Name</th>
+                <th className="p-6 font-black">Barcode/SKU</th>
+                <th className="p-6 font-black">Price (₹)</th>
+                <th className="p-6 font-black">Stock Status</th>
+                <th className="p-6 font-black text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <TableSkeleton />
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-16 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <div className="w-24 h-24 bg-gray-100/50 rounded-full flex items-center justify-center mb-4">
+                        <PackageOpen size={48} className="opacity-50 text-emerald-600" />
+                      </div>
+                      <p className="text-xl font-bold text-gray-700 mb-1">No products found</p>
+                      <p className="text-sm font-medium">Click on 'Add Product' to stock your shelves.</p>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* RIGHT SIDE: Cart / Billing Section (Perfectly matching the left side) */}
-      <div className="w-full lg:w-[420px] xl:w-[450px] flex flex-col bg-white/60 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden h-full">
-        
-        {/* Cart Header */}
-        <div className="p-8 pb-6 border-b border-white/50 relative bg-white/30">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-teal-400/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="flex justify-between items-center relative z-10">
-            <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3 tracking-tight">
-              <div className="bg-gradient-to-br from-gray-900 to-gray-700 p-2.5 rounded-xl text-white shadow-lg">
-                <Receipt size={20} />
-              </div>
-              Current Order
-            </h2>
-            <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm">
-              {cart.length} Items
-            </span>
-          </div>
-        </div>
-
-        {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-          {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gray-200/50 rounded-full blur-xl animate-pulse"></div>
-                <div className="w-24 h-24 bg-white border border-gray-100 rounded-full flex items-center justify-center relative shadow-sm">
-                  <ShoppingCart size={32} className="text-gray-300" strokeWidth={2.5} />
-                </div>
-              </div>
-              <p className="text-xl font-bold text-gray-500">Cart is empty</p>
-              <p className="text-sm font-medium text-gray-400 text-center px-8">Scan a barcode or select products to start billing.</p>
-            </div>
-          ) : (
-            cart.map(item => (
-              <div key={item._id} className="group flex flex-col gap-3 p-5 bg-white border border-gray-100 shadow-sm rounded-[1.5rem] hover:shadow-md transition-all duration-300 hover:border-emerald-100/50">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-extrabold text-gray-800 text-[15px] line-clamp-2 flex-1 pr-4 leading-tight">{item.name}</h4>
-                  <button 
-                    onClick={() => removeFromCart(item._id)}
-                    className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
-                  >
-                    <Trash2 size={18} strokeWidth={2.5} />
-                  </button>
-                </div>
-                
-                <div className="flex justify-between items-center mt-2">
-                  <p className="font-black text-emerald-600 text-xl tracking-tight">₹{(item.price * item.cartQuantity).toLocaleString()}</p>
-                  
-                  {/* Modern Pro Quantity Controls */}
-                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 p-1.5 rounded-xl">
-                    <button 
-                      onClick={() => updateQuantity(item._id, item.cartQuantity - 1)}
-                      className="p-2 rounded-lg hover:bg-white hover:shadow-sm hover:text-emerald-600 text-gray-500 transition-all"
-                    >
-                      <Minus size={16} strokeWidth={3} />
-                    </button>
-                    <span className="w-8 text-center font-black text-gray-800">{item.cartQuantity}</span>
-                    <button 
-                      onClick={() => {
-                        if(item.cartQuantity < item.stock_quantity) {
-                          updateQuantity(item._id, item.cartQuantity + 1);
-                        } else {
-                          alert('Not enough stock!');
-                        }
-                      }}
-                      className="p-2 rounded-lg hover:bg-white hover:shadow-sm hover:text-emerald-600 text-gray-500 transition-all"
-                    >
-                      <Plus size={16} strokeWidth={3} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Checkout Footer Area */}
-        <div className="p-8 bg-white/80 border-t border-white backdrop-blur-xl">
-          <div className="flex justify-between items-end mb-6">
-            <span className="text-gray-500 font-black uppercase tracking-widest text-xs mb-1">Total Amount</span>
-            <span className="text-5xl font-black text-gray-900 tracking-tighter">₹{cartTotal().toLocaleString()}</span>
-          </div>
-          
-          <button 
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || isCheckingOut}
-            className="group relative overflow-hidden w-full bg-gradient-to-r from-emerald-500 to-teal-500 disabled:from-gray-300 disabled:to-gray-200 disabled:cursor-not-allowed text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_8px_20px_-6px_rgba(16,185,129,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 active:scale-[0.98]"
-          >
-            {/* The Magic Shine Effect */}
-            {!isCheckingOut && cart.length > 0 && (
-              <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"></div>
-            )}
-            
-            <div className="relative z-10 flex items-center gap-3">
-              {isCheckingOut ? (
-                <Sparkles className="animate-spin" size={22} />
+                  </td>
+                </tr>
               ) : (
-                <CreditCard size={22} strokeWidth={2.5} />
+                products.map((product) => (
+                  <tr key={product._id} className="border-b border-gray-100/30 hover:bg-white/80 transition-colors group">
+                    <td className="p-6 font-extrabold text-gray-800 text-lg">{product.name}</td>
+                    <td className="p-6 text-gray-400 font-bold font-mono text-sm tracking-wide">{product.barcode_sku}</td>
+                    <td className="p-6 text-emerald-700 font-black text-lg">₹{product.price.toLocaleString()}</td>
+                    <td className="p-6">
+                      <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border ${
+                        product.stock_quantity > 10 
+                          ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
+                          : product.stock_quantity > 0
+                            ? 'bg-amber-50 border-amber-100 text-amber-600'
+                            : 'bg-rose-50 border-rose-100 text-rose-600'
+                      }`}>
+                        {product.stock_quantity > 0 ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-current"></span>
+                            {product.stock_quantity} left
+                          </>
+                        ) : 'Out of Stock'}
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => openEditModal(product)} 
+                          className="p-2.5 text-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"
+                        >
+                          <Edit size={18} strokeWidth={2.5} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product._id)} 
+                          className="p-2.5 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"
+                        >
+                          <Trash2 size={18} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
-              <span className="text-lg tracking-wide font-extrabold">{isCheckingOut ? 'Processing Payment...' : 'Checkout & Pay'}</span>
-            </div>
-          </button>
+            </tbody>
+          </table>
         </div>
       </div>
-      
+
+      {/* Ultra-Premium Glass Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 animate-in fade-in zoom-in-95 duration-300">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => !isSubmitting && setIsModalOpen(false)}></div>
+          
+          <div className="relative w-full max-w-lg bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] border border-white p-8 overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="flex justify-between items-center mb-8 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-2.5 rounded-xl text-white shadow-lg shadow-emerald-200">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+                    {editingId ? 'Edit Product' : 'Add Product'}
+                  </h2>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Inventory Management</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="p-2.5 bg-white border border-gray-100 hover:bg-gray-50 text-gray-500 rounded-full transition-colors shadow-sm"
+              >
+                <X size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Product Name</label>
+                <input 
+                  type="text" required placeholder="e.g. Mechanical Keyboard"
+                  className="w-full bg-white/50 border border-gray-200 rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 placeholder:text-gray-300 placeholder:font-medium shadow-sm"
+                  value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Barcode / SKU</label>
+                <input 
+                  type="text" required placeholder="e.g. KEY-MEC-001"
+                  className="w-full bg-white/50 border border-gray-200 rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 placeholder:text-gray-300 placeholder:font-medium shadow-sm"
+                  value={formData.barcode_sku} onChange={(e) => setFormData({...formData, barcode_sku: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Price (₹)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                    <input 
+                      type="number" required min="0" placeholder="0"
+                      className="w-full bg-white/50 border border-gray-200 rounded-2xl pl-8 p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 shadow-sm"
+                      value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Stock Qty</label>
+                  <input 
+                    type="number" required min="0" placeholder="0"
+                    className="w-full bg-white/50 border border-gray-200 rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-gray-800 shadow-sm"
+                    value={formData.stock_quantity} onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="pt-4 flex gap-4">
+                <button 
+                  type="button" onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-4 px-4 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 font-bold rounded-2xl transition-all shadow-sm"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" disabled={isSubmitting}
+                  className="group flex-1 relative overflow-hidden py-4 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold rounded-2xl transition-all shadow-[0_8px_20px_-6px_rgba(16,185,129,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"></div>
+                  <span className="relative z-10">
+                    {isSubmitting ? 'Saving...' : (editingId ? 'Update Product' : 'Save Product')}
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
