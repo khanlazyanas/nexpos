@@ -25,7 +25,10 @@ const OrderSchema = new mongoose.Schema({
   totalAmount: { type: Number, required: true },
   
   // Payment Option
-  paymentMethod: { type: String, enum: ['Cash', 'Card', 'UPI'], default: 'Cash' }
+  paymentMethod: { type: String, enum: ['Cash', 'Card', 'UPI'], default: 'Cash' },
+
+  // NAYA FIELD: Refund track karne ke liye
+  status: { type: String, enum: ['Completed', 'Refunded'], default: 'Completed' }
 }, { 
   timestamps: true // Ye automatically bill banne ka time aur date save karega
 });
