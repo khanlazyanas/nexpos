@@ -135,7 +135,7 @@ export default function POSPage() {
       const orderData = await orderResponse.json();
 
       if (!orderData.success) {
-        alert('Server error while creating payment.');
+        alert('Error: ' + (orderData.error || 'Server error while creating payment.'));
         setIsCheckingOut(false);
         return;
       }
