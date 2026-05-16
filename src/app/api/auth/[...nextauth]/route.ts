@@ -1,34 +1,47 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import connectToDatabase from "@/lib/db";
+import User from "@/models/User";
+import bcrypt from "bcryptjs";
 
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Yahan hum hardcoded Admin aur Cashier set kar rahe hain
-        if (credentials?.username === "admin" && credentials?.password === "admin123") {
-          return { id: "1", name: "Admin Boss", role: "admin" };
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email aur password zaroori hai!");
         }
-        if (credentials?.username === "cashier" && credentials?.password === "cashier123") {
-          return { id: "2", name: "Store Cashier", role: "cashier" };
+
+        await connectToDatabase();
+
+        // Email se database me dhundho
+        const user = await User.findOne({ email: credentials.email });
+        if (!user) {
+          throw new Error("Ye email database me nahi mila!");
         }
-        // Agar password galat hai
-        return null;
+
+        const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
+        if (!isPasswordMatch) {
+          throw new Error("Galat password!");
+        }
+
+        // Login Success
+        return { id: user._id.toString(), name: user.name, email: user.email, role: user.role };
       }
     })
   ],
   pages: {
-    signIn: '/login', // Hum ek mast custom login page banayenge
+    signIn: '/login',
   },
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
-    maxAge: 12 * 60 * 60, // 12 ghante baad auto-logout
+    maxAge: 12 * 60 * 60,
   }
 });
 

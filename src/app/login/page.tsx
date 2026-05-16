@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, Sparkles, AlertCircle } from 'lucide-react';
+import { Lock, Mail, Sparkles, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,13 +19,13 @@ export default function LoginPage() {
 
     try {
       const res = await signIn('credentials', {
-        username,
+        email,
         password,
         redirect: false, // Auto redirect band taaki hum khud handle karein
       });
 
       if (res?.error) {
-        setError('Galat Username ya Password bhai!');
+        setError('Galat Email ya Password bhai!');
         setLoading(false);
       } else {
         // Login success! Direct POS page par bhejo
@@ -72,13 +72,13 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Username */}
+          {/* Email */}
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Username</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email</label>
             <div className="relative">
-              <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
-                type="text" required placeholder="e.g. admin" value={username} onChange={(e) => setUsername(e.target.value)}
+                type="email" required placeholder="e.g. admin@nexpos.com" value={email} onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3.5 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm sm:text-base shadow-inner"
               />
             </div>
