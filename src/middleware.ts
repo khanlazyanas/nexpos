@@ -1,6 +1,7 @@
-export { default } from "next-auth/middleware";
+import { withAuth } from "next-auth/middleware";
 
-// Ye config guard ko batata hai ki kin panno (pages) par tala lagana hai
+export default withAuth;
+
 export const config = {
   matcher: [
     "/pos", 
