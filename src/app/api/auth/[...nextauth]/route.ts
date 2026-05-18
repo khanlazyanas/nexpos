@@ -19,7 +19,6 @@ const handler = NextAuth({
 
         await connectToDatabase();
 
-        // Email se database me dhundho
         const user = await User.findOne({ email: credentials.email });
         if (!user) {
           throw new Error("Ye email database me nahi mila!");
@@ -30,11 +29,30 @@ const handler = NextAuth({
           throw new Error("Galat password!");
         }
 
-        // Login Success
+        // Login Success -> Role bhej rahe hain
         return { id: user._id.toString(), name: user.name, email: user.email, role: user.role };
       }
     })
   ],
+  
+  // 🔐 NAYA SECTION: Roles ko Session aur Token me inject karne ke liye callbacks
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = (user as any).role;
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as any).role = token.role;
+        (session.user as any).id = token.id;
+      }
+      return session;
+    }
+  },
+
   pages: {
     signIn: '/login',
   },
