@@ -29,7 +29,7 @@ export default function LoginPage() {
         setError('Galat Email ya Password bhai!');
         setLoading(false);
       } else {
-        router.push('/pos');
+        router.push('/');
         router.refresh();
       }
     } catch (err) {
