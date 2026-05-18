@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { 
   Package, Plus, Search, Edit3, Trash2, AlertTriangle, 
-  ArrowUpRight, Barcode, Filter, Loader2, MoreVertical, 
-  ArrowDownCircle, ArrowUpCircle, ShoppingBag, Layers
+  ArrowUpRight, Barcode, Loader2, ArrowDownCircle, 
+  ArrowUpCircle, ShoppingBag, Layers, X, Wand2, CheckCircle2
 } from 'lucide-react';
 
 export default function InventoryPage() {
@@ -12,6 +12,17 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+
+  // Modal & Form States
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    barcode_sku: '',
+    category: 'General', // UI ke liye default
+    price: '',
+    stock_quantity: ''
+  });
 
   useEffect(() => {
     fetchProducts();
@@ -29,6 +40,47 @@ export default function InventoryPage() {
     }
   };
 
+  // 🪄 Auto-Generate SKU
+  const handleGenerateSKU = () => {
+    const randomSKU = 'PROD-' + Math.floor(1000 + Math.random() * 9000);
+    setFormData({ ...formData, barcode_sku: randomSKU });
+  };
+
+  // 🚀 Submit Naya Product (API Call)
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          barcode_sku: formData.barcode_sku,
+          price: Number(formData.price),
+          stock_quantity: Number(formData.stock_quantity) || 0
+        })
+      });
+
+      if (res.ok) {
+        // Form band karo aur khali karo
+        setIsAddModalOpen(false);
+        setFormData({ name: '', barcode_sku: '', category: 'General', price: '', stock_quantity: '' });
+        // Table me naya data lao
+        fetchProducts();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Product add karne me error aayi');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Network error, please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // 🧮 Stats Calculation
   const totalItems = products.length;
   const lowStockItems = products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= 10).length;
@@ -37,7 +89,7 @@ export default function InventoryPage() {
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+                          (p.barcode_sku && p.barcode_sku.toLowerCase().includes(searchTerm.toLowerCase()));
     
     if (filterStatus === 'Low Stock') return matchesSearch && p.stock_quantity <= 10 && p.stock_quantity > 0;
     if (filterStatus === 'Out of Stock') return matchesSearch && p.stock_quantity === 0;
@@ -45,7 +97,7 @@ export default function InventoryPage() {
   });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20 lg:pb-10">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-20 lg:pb-10 relative">
       
       {/* 1. Pro Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -58,7 +110,10 @@ export default function InventoryPage() {
           </p>
         </div>
 
-        <button className="group relative overflow-hidden flex items-center gap-3 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-200 transition-all active:scale-95 hover:bg-emerald-700">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="group relative overflow-hidden flex items-center gap-3 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-200 transition-all active:scale-95 hover:bg-emerald-700"
+        >
            <Plus size={20} strokeWidth={3} />
            <span>Add New Product</span>
         </button>
@@ -125,6 +180,12 @@ export default function InventoryPage() {
                     <Loader2 className="animate-spin mx-auto text-emerald-500" size={40} />
                   </td>
                 </tr>
+              ) : filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-20 text-center text-gray-400 font-medium">
+                    No products found. Add a new product to get started!
+                  </td>
+                </tr>
               ) : filteredProducts.map((product) => (
                 <tr key={product._id} className="hover:bg-emerald-50/30 transition-colors group">
                   <td className="px-8 py-6">
@@ -134,7 +195,7 @@ export default function InventoryPage() {
                       </div>
                       <div>
                         <p className="font-bold text-gray-900">{product.name}</p>
-                        <p className="text-xs text-gray-400 font-medium">Updated 2h ago</p>
+                        <p className="text-xs text-gray-400 font-medium">Updated just now</p>
                       </div>
                     </div>
                   </td>
@@ -143,7 +204,7 @@ export default function InventoryPage() {
                       <span className="text-xs font-black text-gray-400 uppercase tracking-tighter mb-1">SKU</span>
                       <div className="flex items-center gap-2 font-mono text-sm font-bold text-gray-700 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100 w-fit">
                         <Barcode size={14} className="text-emerald-500" />
-                        {product.sku || 'NO-SKU'}
+                        {product.barcode_sku || 'NO-SKU'}
                       </div>
                     </div>
                   </td>
@@ -172,6 +233,94 @@ export default function InventoryPage() {
           </table>
         </div>
       </div>
+
+      {/* 🚀 Add Product Modal (Popup) */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            
+            {/* Modal Header */}
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-xl font-black text-gray-900">Add New Product</h2>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleAddProduct} className="p-8 space-y-5">
+              
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Product Name</label>
+                <input 
+                  type="text" required
+                  placeholder="e.g. Wireless Mouse"
+                  value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Price (₹)</label>
+                  <input 
+                    type="number" required min="0"
+                    placeholder="0.00"
+                    value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Initial Stock</label>
+                  <input 
+                    type="number" required min="0"
+                    placeholder="0"
+                    value={formData.stock_quantity} onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 flex justify-between">
+                  <span>Barcode / SKU Code</span>
+                  <button type="button" onClick={handleGenerateSKU} className="text-emerald-500 hover:text-emerald-600 flex items-center gap-1 normal-case tracking-normal font-bold">
+                    <Wand2 size={12} /> Auto Generate
+                  </button>
+                </label>
+                <input 
+                  type="text" required
+                  placeholder="Scan barcode or type SKU..."
+                  value={formData.barcode_sku} onChange={(e) => setFormData({...formData, barcode_sku: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-mono font-bold text-gray-800"
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="pt-4 mt-6 border-t border-gray-100 flex gap-3">
+                <button 
+                  type="button" onClick={() => setIsAddModalOpen(false)}
+                  className="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" disabled={isSubmitting}
+                  className="flex-[2] py-3.5 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                  {isSubmitting ? 'Saving...' : 'Save Product'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
