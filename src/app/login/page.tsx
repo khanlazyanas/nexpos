@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, Sparkles, AlertCircle } from 'lucide-react';
+import Link from 'next/link'; // <--- Ye import zaroori hai
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -21,14 +22,13 @@ export default function LoginPage() {
       const res = await signIn('credentials', {
         email,
         password,
-        redirect: false, // Auto redirect band taaki hum khud handle karein
+        redirect: false,
       });
 
       if (res?.error) {
         setError('Galat Email ya Password bhai!');
         setLoading(false);
       } else {
-        // Login success! Direct POS page par bhejo
         router.push('/pos');
         router.refresh();
       }
@@ -112,8 +112,16 @@ export default function LoginPage() {
           </div>
         </form>
 
+        {/* NAYA SECTION: Register Link */}
+        <div className="mt-8 text-center text-xs font-medium text-slate-400">
+          New to the system?{' '}
+          <Link href="/register" className="text-emerald-400 font-bold hover:underline transition-all hover:text-emerald-300">
+            Register here
+          </Link>
+        </div>
+
         {/* Bottom Helper Info */}
-        <div className="mt-8 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+        <div className="mt-6 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
           System Guard Active v2.0
         </div>
 
