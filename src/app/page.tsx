@@ -1,10 +1,22 @@
+'use client';
+
 import Link from 'next/link';
-import { ArrowRight, ShoppingCart, LayoutDashboard, Package, Sparkles, Zap } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import { ArrowRight, ShoppingCart, LayoutDashboard, Package, Sparkles, Zap, LogOut } from 'lucide-react';
 
 export default function Home() {
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-900 bg-slate-50">
       
+      {/* 🚀 NAYA: Floating Logout Button */}
+      <button 
+        onClick={() => signOut({ callbackUrl: '/login' })}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2 px-4 py-2.5 bg-white/80 backdrop-blur-md hover:bg-rose-50 text-gray-700 hover:text-rose-600 font-extrabold text-xs sm:text-sm rounded-xl border border-gray-200/50 shadow-sm transition-all active:scale-95 z-50"
+      >
+        <LogOut size={16} />
+        <span>Logout</span>
+      </button>
+
       {/* 1. SaaS Background with Grid & Animated Glowing Orbs */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-400/30 blur-[120px] animate-pulse duration-1000"></div>
@@ -53,7 +65,7 @@ export default function Home() {
 
           <div className="grid grid-cols-2 gap-4 pt-2">
             <Link 
-              href="/dashboard" 
+              href="/orders" 
               className="group flex items-center justify-center gap-2 w-full bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50 text-gray-600 hover:text-emerald-700 py-3.5 rounded-xl font-semibold transition-all shadow-sm hover:shadow"
             >
               <LayoutDashboard size={18} className="group-hover:scale-110 transition-transform text-emerald-500" />
