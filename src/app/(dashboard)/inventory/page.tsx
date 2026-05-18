@@ -15,11 +15,13 @@ export default function InventoryPage() {
 
   // Modal & Form States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // ✏️ Naya Edit Modal State
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null); // Track Active Product
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     barcode_sku: '',
-    category: 'General', // UI ke liye default
+    category: 'General', 
     price: '',
     stock_quantity: ''
   });
@@ -46,7 +48,26 @@ export default function InventoryPage() {
     setFormData({ ...formData, barcode_sku: randomSKU });
   };
 
-  // 🚀 Submit Naya Product (API Call)
+  // ➕ Add Modal Open Handler (Clears previous values)
+  const openAddModal = () => {
+    setFormData({ name: '', barcode_sku: '', category: 'General', price: '', stock_quantity: '' });
+    setIsAddModalOpen(true);
+  };
+
+  // ✏️ Edit Modal Open Handler (Populates item values)
+  const openEditModal = (product: any) => {
+    setSelectedProductId(product._id);
+    setFormData({
+      name: product.name,
+      barcode_sku: product.barcode_sku,
+      category: product.category || 'General',
+      price: product.price.toString(),
+      stock_quantity: product.stock_quantity.toString()
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // 🚀 Submit Naya Product (POST API Call)
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -64,10 +85,8 @@ export default function InventoryPage() {
       });
 
       if (res.ok) {
-        // Form band karo aur khali karo
         setIsAddModalOpen(false);
         setFormData({ name: '', barcode_sku: '', category: 'General', price: '', stock_quantity: '' });
-        // Table me naya data lao
         fetchProducts();
       } else {
         const data = await res.json();
@@ -75,9 +94,61 @@ export default function InventoryPage() {
       }
     } catch (error) {
       console.error(error);
-      alert('Network error, please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // 💾 Submit Edited Product (PUT API Call)
+  const handleEditProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProductId) return;
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/products/${selectedProductId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          barcode_sku: formData.barcode_sku,
+          price: Number(formData.price),
+          stock_quantity: Number(formData.stock_quantity)
+        })
+      });
+
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setSelectedProductId(null);
+        setFormData({ name: '', barcode_sku: '', category: 'General', price: '', stock_quantity: '' });
+        fetchProducts();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Product update fail ho gaya');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 🗑️ Delete Product Handler
+  const handleDeleteProduct = async (id: string, name: string) => {
+    if (!confirm(`Kya aap sach me "${name}" ko inventory se delete karna chahte hain?`)) return;
+
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        fetchProducts(); // Refresh Table
+      } else {
+        alert('Product delete karne me koi dikkat aayi.');
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -111,7 +182,7 @@ export default function InventoryPage() {
         </div>
 
         <button 
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={openAddModal}
           className="group relative overflow-hidden flex items-center gap-3 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-200 transition-all active:scale-95 hover:bg-emerald-700"
         >
            <Plus size={20} strokeWidth={3} />
@@ -219,10 +290,18 @@ export default function InventoryPage() {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm">
+                      {/* ✏️ Trigger Edit Modal */}
+                      <button 
+                        onClick={() => openEditModal(product)}
+                        className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm cursor-pointer"
+                      >
                         <Edit3 size={18} />
                       </button>
-                      <button className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm">
+                      {/* 🗑️ Trigger Delete Function */}
+                      <button 
+                        onClick={() => handleDeleteProduct(product._id, product.name)}
+                        className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm cursor-pointer"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </div>
@@ -234,88 +313,85 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* 🚀 Add Product Modal (Popup) */}
+      {/* 🚀 ADD PRODUCT MODAL */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            
-            {/* Modal Header */}
             <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h2 className="text-xl font-black text-gray-900">Add New Product</h2>
-              <button 
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <button onClick={() => setIsAddModalOpen(false)} className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"><X size={20} /></button>
             </div>
-
-            {/* Modal Body / Form */}
             <form onSubmit={handleAddProduct} className="p-8 space-y-5">
-              
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Product Name</label>
-                <input 
-                  type="text" required
-                  placeholder="e.g. Wireless Mouse"
-                  value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800"
-                />
+                <input type="text" required placeholder="e.g. Wireless Mouse" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800" />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Price (₹)</label>
-                  <input 
-                    type="number" required min="0"
-                    placeholder="0.00"
-                    value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800"
-                  />
+                  <input type="number" required min="0" placeholder="0.00" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800" />
                 </div>
                 <div>
                   <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Initial Stock</label>
-                  <input 
-                    type="number" required min="0"
-                    placeholder="0"
-                    value={formData.stock_quantity} onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800"
-                  />
+                  <input type="number" required min="0" placeholder="0" value={formData.stock_quantity} onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 flex justify-between">
                   <span>Barcode / SKU Code</span>
-                  <button type="button" onClick={handleGenerateSKU} className="text-emerald-500 hover:text-emerald-600 flex items-center gap-1 normal-case tracking-normal font-bold">
-                    <Wand2 size={12} /> Auto Generate
-                  </button>
+                  <button type="button" onClick={handleGenerateSKU} className="text-emerald-500 hover:text-emerald-600 flex items-center gap-1 normal-case tracking-normal font-bold"><Wand2 size={12} /> Auto Generate</button>
                 </label>
-                <input 
-                  type="text" required
-                  placeholder="Scan barcode or type SKU..."
-                  value={formData.barcode_sku} onChange={(e) => setFormData({...formData, barcode_sku: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-mono font-bold text-gray-800"
-                />
+                <input type="text" required placeholder="Scan barcode or type SKU..." value={formData.barcode_sku} onChange={(e) => setFormData({...formData, barcode_sku: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-mono font-bold text-gray-800" />
               </div>
-
-              {/* Modal Footer */}
               <div className="pt-4 mt-6 border-t border-gray-100 flex gap-3">
-                <button 
-                  type="button" onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" disabled={isSubmitting}
-                  className="flex-[2] py-3.5 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-[2] py-3.5 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200 disabled:opacity-50 flex items-center justify-center gap-2">
                   {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                   {isSubmitting ? 'Saving...' : 'Save Product'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
 
+      {/* 🚀 EDIT PRODUCT MODAL (Popup Form) */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-xl font-black text-gray-950">Edit Product Details</h2>
+              <button onClick={() => { setIsEditModalOpen(false); setSelectedProductId(null); }} className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleEditProduct} className="p-8 space-y-5">
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Product Name</label>
+                <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Price (₹)</label>
+                  <input type="number" required min="0" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800" />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Current Stock</label>
+                  <input type="number" required min="0" value={formData.stock_quantity} onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-bold text-gray-800" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 flex justify-between">
+                  <span>Barcode / SKU Code</span>
+                  <button type="button" onClick={handleGenerateSKU} className="text-emerald-500 hover:text-emerald-600 flex items-center gap-1 normal-case tracking-normal font-bold"><Wand2 size={12} /> Re-Generate</button>
+                </label>
+                <input type="text" required value={formData.barcode_sku} onChange={(e) => setFormData({...formData, barcode_sku: e.target.value})} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-emerald-500 transition-all font-mono font-bold text-gray-800" />
+              </div>
+              <div className="pt-4 mt-6 border-t border-gray-100 flex gap-3">
+                <button type="button" onClick={() => { setIsEditModalOpen(false); setSelectedProductId(null); }} className="flex-1 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-[2] py-3.5 bg-amber-500 text-white font-black rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-100 disabled:opacity-50 flex items-center justify-center gap-2">
+                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                  {isSubmitting ? 'Updating...' : 'Update Product'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
