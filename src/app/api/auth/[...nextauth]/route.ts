@@ -19,7 +19,8 @@ const handler = NextAuth({
 
         await connectToDatabase();
 
-        const user = await User.findOne({ email: credentials.email });
+        // 🛠️ Safe query: Input ko trim aur lowercase kar rahe hain accidental match failures bachane ke liye
+        const user = await User.findOne({ email: credentials.email.toLowerCase().trim() });
         if (!user) {
           throw new Error("Ye email database me nahi mila!");
         }
@@ -29,26 +30,39 @@ const handler = NextAuth({
           throw new Error("Galat password!");
         }
 
-        // Login Success -> Role bhej rahe hain
-        return { id: user._id.toString(), name: user.name, email: user.email, role: user.role };
+        console.log("🔥 [1. AUTHORIZE PASSED] -> DB User Role:", user.role);
+
+        // Login Success
+        return { 
+          id: user._id.toString(), 
+          name: user.name, 
+          email: user.email, 
+          role: user.role 
+        };
       }
     })
   ],
   
-  // 🔐 NAYA SECTION: Roles ko Session aur Token me inject karne ke liye callbacks
   callbacks: {
-    async jwt({ token, user }) {
+    // 🛠️ FIX HERE: Token data persistent loop me save hona chahiye
+    async jwt({ token, user, trigger, session }) {
+      // Jab user pehli baar login karega tab ye condition chalegi
       if (user) {
         token.role = (user as any).role;
         token.id = user.id;
       }
+      
+      console.log("⚡ [2. JWT CALLBACK LOOP] -> Safe Token Role:", token.role);
       return token;
     },
+    
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token) {
         (session.user as any).role = token.role;
         (session.user as any).id = token.id;
       }
+      
+      console.log("🚀 [3. SESSION CALLED FOR UI] -> Frontend Session Object Role:", (session.user as any)?.role);
       return session;
     }
   },
