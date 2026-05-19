@@ -31,11 +31,14 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'User banane me dikkat aayi.');
+        // 🛠️ Professional English Error Alert
+        setError(data.error || 'Failed to create account. Please try again.');
         setLoading(false);
       } else {
-        setSuccess('Account successfully ban gaya bhai! 🎉');
+        // 🛠️ Professional English Success Alert
+        setSuccess('Registration successful! Redirecting to login page...');
         setLoading(false);
+        
         // 2 second baad login page par bhej do
         setTimeout(() => {
           router.push('/login');
@@ -43,7 +46,7 @@ export default function RegisterPage() {
       }
     } catch (err) {
       console.error(err);
-      setError('Technical error aa gayi.');
+      setError('A technical error occurred. Please contact system admin.');
       setLoading(false);
     }
   };
@@ -109,6 +112,7 @@ export default function RegisterPage() {
               <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
                 type="email" required placeholder="e.g. anas@nexpos.com" value={email} onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email" autoCapitalize="none"
                 className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm shadow-inner"
               />
             </div>
