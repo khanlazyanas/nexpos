@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { IndianRupee, ShoppingBag, Package, AlertTriangle, Activity, RefreshCw, BarChart3, Loader2 } from 'lucide-react';
+import { IndianRupee, ShoppingBag, Package, AlertTriangle, Activity, RefreshCw, BarChart3, Loader2, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -10,10 +11,12 @@ export default function DashboardPage() {
     totalOrders: 0,
     totalProducts: 0,
     lowStockCount: 0,
-    chartData: [] // Naya Chart Array Container
+    chartData: [],
+    lowStockItems: [] // 🛠️ NAYA: Backend se low stock list lene ke liye array
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [restockValues, setRestockValues] = useState<{ [key: string]: number }>({});
 
   const fetchStats = async (isRefresh = false) => {
     try {
@@ -33,7 +36,34 @@ export default function DashboardPage() {
     fetchStats();
   }, []);
 
-  // Premium SaaS Skeleton Loader
+  // 🛠️ NAYA: Quick Restock API call handler
+  const handleRestock = async (productId: string) => {
+    const qty = restockValues[productId];
+    if (!qty || qty <= 0) {
+      toast.error("Please enter a valid quantity!");
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/restock', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, addedQuantity: qty })
+      });
+      
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`Successfully added ${qty} items to stock!`, { style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
+        setRestockValues({ ...restockValues, [productId]: 0 }); // Input box clear karo
+        fetchStats(true); // Dashboard table ko fresh reload karo
+      } else {
+        toast.error(data.error || "Restock failed!");
+      }
+    } catch (error) {
+      toast.error("Technical error during restock!");
+    }
+  };
+
   const SkeletonCard = () => (
     <div className="bg-white/50 backdrop-blur-2xl p-8 rounded-[2rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] animate-pulse flex items-center gap-6">
       <div className="w-16 h-16 bg-gray-200/60 rounded-2xl"></div>
@@ -47,7 +77,6 @@ export default function DashboardPage() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500 relative z-10 pb-12">
       
-      {/* Header Section with Live Indicator and Refresh Action */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 relative">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 mb-1">
@@ -65,7 +94,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Dynamic Action Sync Button */}
         <button 
           onClick={() => fetchStats(true)}
           disabled={loading || refreshing}
@@ -81,10 +109,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* Metrics Data Grid Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            
-            {/* Revenue Card - Ultra Premium */}
             <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.15)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
               <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl group-hover:bg-emerald-400/30 transition-all duration-700 group-hover:scale-150"></div>
               <div className="relative flex items-center gap-6">
@@ -103,7 +128,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Orders Card */}
             <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(59,130,246,0.15)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
               <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl group-hover:bg-blue-400/30 transition-all duration-700 group-hover:scale-150"></div>
               <div className="relative flex items-center gap-6">
@@ -122,7 +146,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Products Card */}
             <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.15)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
               <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl group-hover:bg-purple-400/30 transition-all duration-700 group-hover:scale-150"></div>
               <div className="relative flex items-center gap-6">
@@ -141,16 +164,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Low Stock Card */}
             <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
               <div className={`absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 rounded-full blur-2xl transition-all duration-700 group-hover:scale-150 ${stats.lowStockCount > 0 ? 'bg-rose-400/20 group-hover:bg-rose-400/30' : 'bg-gray-400/20 group-hover:bg-gray-400/30'}`}></div>
               <div className="relative flex items-center gap-6">
                 <div className={`absolute inset-0 rounded-2xl rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm ${stats.lowStockCount > 0 ? 'bg-rose-400/30' : 'bg-gray-400/30'}`}></div>
-                <div className={`relative p-4 rounded-2xl shadow-lg group-hover:-rotate-3 transition-all duration-500 ${
-                  stats.lowStockCount > 0 
-                    ? 'bg-gradient-to-br from-rose-400 to-red-600 text-white shadow-rose-200' 
-                    : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500 shadow-gray-200'
-                }`}>
+                <div className={`relative p-4 rounded-2xl shadow-lg group-hover:-rotate-3 transition-all duration-500 ${stats.lowStockCount > 0 ? 'bg-gradient-to-br from-rose-400 to-red-600 text-white shadow-rose-200' : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500 shadow-gray-200'}`}>
                   <AlertTriangle size={32} strokeWidth={2.5} />
                 </div>
               </div>
@@ -161,10 +179,9 @@ export default function DashboardPage() {
                 </h3>
               </div>
             </div>
-
           </div>
 
-          {/* 📈 3. REAL-TIME DATA CHARTS CONTAINER INJECTION */}
+          {/* 📈 REAL-TIME DATA CHARTS CONTAINER */}
           <div className="bg-white/70 backdrop-blur-2xl border border-white rounded-[2.5rem] p-6 sm:p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.08)] transition-all duration-500">
             <div className="flex items-center gap-2.5 mb-6">
               <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100">
@@ -200,6 +217,64 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+
+          {/* ⚠️ NAYA: LOW STOCK ACTION CENTER WIDGET */}
+          {stats.lowStockCount > 0 && (
+            <div className="bg-rose-50/50 backdrop-blur-2xl border border-rose-100 rounded-[2.5rem] p-6 sm:p-8 shadow-lg animate-in slide-in-from-bottom-5 duration-500">
+              <div className="flex items-center gap-2.5 mb-6">
+                <div className="p-2.5 bg-rose-100 rounded-xl text-rose-600 border border-rose-200">
+                  <AlertTriangle size={18} className="animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-black text-rose-900 tracking-tight text-lg">Action Required: Low Stock Items</h3>
+                  <p className="text-xs text-rose-500 font-bold uppercase tracking-widest">Immediate restock recommended</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-rose-200/50">
+                      <th className="py-3 px-4 text-xs font-black text-rose-400 uppercase tracking-widest">Item Name</th>
+                      <th className="py-3 px-4 text-xs font-black text-rose-400 uppercase tracking-widest">Current Stock</th>
+                      <th className="py-3 px-4 text-xs font-black text-rose-400 uppercase tracking-widest text-right">Quick Restock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.lowStockItems.map((item: any) => (
+                      <tr key={item._id} className="border-b border-rose-100/50 last:border-0 hover:bg-white/50 transition-colors">
+                        <td className="py-4 px-4 font-bold text-gray-800 text-sm">{item.name}</td>
+                        <td className="py-4 px-4">
+                          <span className="bg-rose-100 text-rose-700 font-black px-3 py-1 rounded-lg text-xs">
+                            {item.stock_quantity} left
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <input 
+                              type="number"
+                              min="1"
+                              placeholder="+ Qty"
+                              value={restockValues[item._id] || ''}
+                              onChange={(e) => setRestockValues({ ...restockValues, [item._id]: Number(e.target.value) })}
+                              className="w-20 bg-white border border-rose-200 rounded-xl py-2 px-3 text-xs font-bold outline-none focus:border-rose-500 text-gray-700"
+                            />
+                            <button 
+                              onClick={() => handleRestock(item._id)}
+                              className="bg-gray-900 hover:bg-emerald-500 text-white p-2 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center"
+                            >
+                              <Plus size={16} strokeWidth={3} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
         </>
       )}
     </div>

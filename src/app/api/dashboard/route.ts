@@ -15,7 +15,7 @@ export async function GET() {
     let totalRevenue = 0;
     const totalOrders = orders.length;
     
-    // NAYA: Chart Data ke liye rozana ki kamai ka hisaab rakhne wala object
+    // Chart Data ke liye rozana ki kamai ka hisaab rakhne wala object
     const dailySalesMap: { [key: string]: number } = {};
 
     orders.forEach((order) => {
@@ -39,20 +39,25 @@ export async function GET() {
     // 2. Products se Total Items aur Low Stock calculate karna
     const products = await Product.find();
     const totalProducts = products.length;
-    const lowStockCount = products.filter(p => p.stock_quantity <= 5).length;
+    
+    // 🛠️ FIX & UPDATE: Low stock items ki list nikal rahe hain aur count bhi filter kar rahe hain
+    const lowStockItems = products.filter(p => p.stock_quantity <= 5);
+    const lowStockCount = lowStockItems.length;
 
-    // NAYA: dailySalesMap ko Object se Array me badalna taaki Recharts graph padh sake
+    // dailySalesMap ko Object se Array me badalna taaki Recharts graph padh sake
     const chartData = Object.keys(dailySalesMap).map(date => ({
       name: date,
       Sales: dailySalesMap[date]
     }));
 
+    // 🔥 EXACT RESPONSE LOGIC ACCORDING TO YOUR CODE + LOW STOCK ITEMS
     return NextResponse.json({
       totalRevenue,
       totalOrders,
       totalProducts,
       lowStockCount,
-      chartData // NAYA: Ab graph ko uski zaroorat ka data mil jayega!
+      lowStockItems, // 🛠️ Frontend Action Center ab is array ko render karega
+      chartData 
     }, { status: 200 });
 
   } catch (error) {
