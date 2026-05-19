@@ -3,12 +3,16 @@ import connectToDatabase from '@/lib/db';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 
+// 🛠️ VERCEL FIX: Next.js ko bolo ki is page ka data hamesha fresh fetch kare
+export const dynamic = 'force-dynamic'; 
+
 // 1. Saare purane bills (Sales History) mangwane ke liye
 export async function GET() {
   try {
     await connectToDatabase();
     // Sabse naye bills upar dikhane ke liye sort({ createdAt: -1 })
     const orders = await Order.find().sort({ createdAt: -1 });
+    // Aapke structure ke hisaab se seedha array bhej rahe hain
     return NextResponse.json(orders, { status: 200 });
   } catch (error) {
     console.error("Orders Fetch Error:", error);
