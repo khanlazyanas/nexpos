@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { LayoutDashboard, ShoppingCart, Package, Loader2, Lock } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast'; // 🔥 Toast Notification Import
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function Sidebar() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const sessionContext = useSession(); // 🛠️ SAFE: Handled undefined object during static prerendering
+  const session = sessionContext?.data;
+  const status = sessionContext?.status || 'loading';
   
   const isAdmin = (session?.user as any)?.role === 'Admin';
+  const router = useRouter();
 
   // 🛡️ Sidebar Protected Navigation
   const handleNavigation = (path: string) => {
@@ -38,11 +40,11 @@ export default function Sidebar() {
 
       <nav className="space-y-3">
         
-        {/* 📊 Dashboard Button */}
+        {/* 📊 Dashboard Button (🛠️ FIX: Redirects to /dashboard) */}
         {status !== 'loading' && (
           <button 
-            onClick={() => handleNavigation('/orders')}
-            className={`flex items-center justify-between w-full p-3.5 rounded-xl font-bold text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 transition-all cursor-pointer text-left`}
+            onClick={() => handleNavigation('/dashboard')}
+            className="flex items-center justify-between w-full p-3.5 rounded-xl font-bold text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 transition-all cursor-pointer text-left"
           >
             <div className="flex items-center gap-3">
               <LayoutDashboard size={18} className="text-emerald-400" />
@@ -52,7 +54,7 @@ export default function Sidebar() {
           </button>
         )}
         
-        {/* 🛒 POS Billing - Open for all roles */}
+        {/* 🛒 POS Billing */}
         <Link href="/pos" className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-gray-800/60 font-bold text-sm text-gray-300 hover:text-white transition-all">
           <ShoppingCart size={18} className="text-emerald-400" />
           <span>POS Billing</span>
@@ -62,7 +64,7 @@ export default function Sidebar() {
         {status !== 'loading' && (
           <button 
             onClick={() => handleNavigation('/inventory')}
-            className={`flex items-center justify-between w-full p-3.5 rounded-xl font-bold text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 transition-all cursor-pointer text-left`}
+            className="flex items-center justify-between w-full p-3.5 rounded-xl font-bold text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 transition-all cursor-pointer text-left"
           >
             <div className="flex items-center gap-3">
               <Package size={18} className="text-emerald-400" />

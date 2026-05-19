@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, ShoppingCart, LayoutDashboard, Package, Sparkles, Zap, LogOut } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast'; // 🔥 Toast Notifications
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function Home() {
-  const { data: session } = useSession();
+  const sessionContext = useSession(); // 🛠️ SAFE: Direct destructure nahi kar rahe
+  const session = sessionContext?.data;
   const router = useRouter();
 
   // 🛡️ Protected Navigation Logic
@@ -33,7 +34,7 @@ export default function Home() {
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-900 bg-slate-50">
       
-      {/* 🚀 Toaster Container for Alerts */}
+      {/* Toaster Container for Alerts */}
       <Toaster position="top-center" />
 
       {/* Floating Logout Button */}
@@ -45,12 +46,12 @@ export default function Home() {
         <span>Logout</span>
       </button>
 
-      {/* 1. SaaS Background with Grid & Animated Glowing Orbs */}
+      {/* SaaS Background with Grid & Animated Glowing Orbs */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-400/30 blur-[120px] animate-pulse duration-1000"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-teal-400/20 blur-[120px] animate-pulse delay-700 duration-1000"></div>
 
-      {/* 2. Main Ultra-Premium Glass Card */}
+      {/* Main Ultra-Premium Glass Card */}
       <div className="relative z-10 w-full max-w-[520px] bg-white/70 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white p-10 md:p-12 text-center transition-all duration-500 hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.15)]">
         
         {/* Pro Badge */}
@@ -68,7 +69,7 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Welcome Text with Refined Typography */}
+        {/* Welcome Text */}
         <h1 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-br from-gray-900 via-emerald-900 to-teal-700 bg-clip-text text-transparent tracking-tighter">
           NexPOS
         </h1>
@@ -78,7 +79,6 @@ export default function Home() {
         
         {/* Action Buttons */}
         <div className="space-y-4">
-          {/* Primary Button with Hover Shine Effect */}
           <Link 
             href="/pos" 
             className="group relative overflow-hidden flex items-center justify-center gap-3 w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 p-4 rounded-2xl font-bold text-lg shadow-[0_8px_20px_-6px_rgba(16,185,129,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 transition-all duration-300"
@@ -90,9 +90,9 @@ export default function Home() {
           </Link>
 
           <div className="grid grid-cols-2 gap-4 pt-2">
-            {/* 📊 Dashboard Protected Button */}
+            {/* 📊 Dashboard Protected Button (🛠️ FIX: Points back to /dashboard) */}
             <button 
-              onClick={() => handleProtectedNavigation('/orders')}
+              onClick={() => handleProtectedNavigation('/dashboard')}
               className="group flex items-center justify-center gap-2 w-full bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50 text-gray-600 hover:text-emerald-700 py-3.5 rounded-xl font-semibold transition-all shadow-sm hover:shadow cursor-pointer"
             >
               <LayoutDashboard size={18} className="group-hover:scale-110 transition-transform text-emerald-500" />
@@ -120,7 +120,6 @@ export default function Home() {
 
       </div>
 
-      {/* Tailwind Custom Animation Injection for the Shine effect */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes shimmer {
           100% { transform: translateX(100%); }
