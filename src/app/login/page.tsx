@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, Sparkles, AlertCircle } from 'lucide-react';
-import Link from 'next/link'; // <--- Ye import zaroori hai
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -26,7 +26,8 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        setError('Galat Email ya Password bhai!');
+        // 🛠️ Professional English Error Message
+        setError('Invalid email or password. Please try again.');
         setLoading(false);
       } else {
         router.push('/');
@@ -34,7 +35,8 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error(err);
-      setError('Kuch technical dikkat aa gayi.');
+      // 🛠️ Professional Technical Error Message
+      setError('An internal authentication error occurred. Please contact admin.');
       setLoading(false);
     }
   };
@@ -79,6 +81,7 @@ export default function LoginPage() {
               <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
                 type="email" required placeholder="e.g. admin@nexpos.com" value={email} onChange={(e) => setEmail(e.target.value)}
+                autoCapitalize="none" autoComplete="email" spellCheck={false}
                 className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3.5 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm sm:text-base shadow-inner"
               />
             </div>
@@ -112,7 +115,7 @@ export default function LoginPage() {
           </div>
         </form>
 
-        {/* NAYA SECTION: Register Link */}
+        {/* Register Link */}
         <div className="mt-8 text-center text-xs font-medium text-slate-400">
           New to the system?{' '}
           <Link href="/register" className="text-emerald-400 font-bold hover:underline transition-all hover:text-emerald-300">
