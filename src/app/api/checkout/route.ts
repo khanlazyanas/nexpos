@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
+import Customer from '@/models/Customer'; // 🛠️ NAYA: Customer Model Import
 
 export async function POST(req: Request) {
   try {
@@ -51,6 +52,26 @@ export async function POST(req: Request) {
       await Product.findByIdAndUpdate(item._id, {
         $inc: { stock_quantity: -item.cartQuantity } // Minus karke stock hatao
       });
+    }
+
+    // 4. 🛠️ NAYA: Customer CRM & Khata Database Update
+    // Agar mobile number diya gaya hai (matlab proper customer hai, guest nahi)
+    if (customerName && customerMobile) {
+      const existingCustomer = await Customer.findOne({ phone: customerMobile });
+      
+      if (existingCustomer) {
+        // Purana customer hai toh uski lifetime shopping value me naya amount jod do
+        existingCustomer.totalPurchases += totalAmount;
+        await existingCustomer.save();
+      } else {
+        // Naya customer hai toh pehli baar CRM me uska record banao
+        await Customer.create({
+          name: customerName,
+          phone: customerMobile,
+          totalPurchases: totalAmount,
+          dueAmount: 0 // Default 0
+        });
+      }
     }
 
     return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
