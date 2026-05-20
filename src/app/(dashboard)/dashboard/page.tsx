@@ -12,7 +12,7 @@ export default function DashboardPage() {
     totalProducts: 0,
     lowStockCount: 0,
     chartData: [],
-    lowStockItems: [] // 🛠️ NAYA: Backend se low stock list lene ke liye array
+    lowStockItems: []
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -36,11 +36,10 @@ export default function DashboardPage() {
     fetchStats();
   }, []);
 
-  // 🛠️ NAYA: Quick Restock API call handler
   const handleRestock = async (productId: string) => {
     const qty = restockValues[productId];
     if (!qty || qty <= 0) {
-      toast.error("Please enter a valid quantity!");
+      toast.error("Please enter a valid quantity!", { style: { background: '#333', color: '#fff', borderRadius: '12px' }});
       return;
     }
 
@@ -54,8 +53,8 @@ export default function DashboardPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(`Successfully added ${qty} items to stock!`, { style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
-        setRestockValues({ ...restockValues, [productId]: 0 }); // Input box clear karo
-        fetchStats(true); // Dashboard table ko fresh reload karo
+        setRestockValues({ ...restockValues, [productId]: 0 }); 
+        fetchStats(true); 
       } else {
         toast.error(data.error || "Restock failed!");
       }
@@ -65,191 +64,214 @@ export default function DashboardPage() {
   };
 
   const SkeletonCard = () => (
-    <div className="bg-white/50 backdrop-blur-2xl p-8 rounded-[2rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] animate-pulse flex items-center gap-6">
-      <div className="w-16 h-16 bg-gray-200/60 rounded-2xl"></div>
+    <div className="bg-white/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-pulse flex items-center gap-6">
+      <div className="w-16 h-16 bg-gray-200/50 rounded-2xl"></div>
       <div className="space-y-3 flex-1">
-        <div className="h-4 bg-gray-200/60 rounded-full w-1/2"></div>
-        <div className="h-8 bg-gray-200/60 rounded-full w-3/4"></div>
+        <div className="h-4 bg-gray-200/50 rounded-full w-1/2"></div>
+        <div className="h-8 bg-gray-200/50 rounded-full w-3/4"></div>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 relative z-10 pb-12">
+    <div className="space-y-8 animate-in fade-in duration-700 relative z-10 pb-12">
       
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 relative">
-        <div className="flex flex-col gap-2">
+      {/* 🌌 SaaS Background Elements */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] -z-20"></div>
+      <div className="absolute left-[-10%] top-[-5%] -z-10 h-[400px] w-[400px] rounded-full bg-emerald-500 opacity-20 blur-[120px] animate-pulse duration-[4000ms]"></div>
+      <div className="absolute right-[-5%] top-[20%] -z-10 h-[300px] w-[300px] rounded-full bg-teal-400/20 blur-[100px] animate-pulse delay-1000 duration-[3000ms]"></div>
+
+      {/* 1. Ultra-Premium Header */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 bg-white/40 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-3 mb-1">
-            <div className="flex items-center justify-center w-6 h-6 bg-emerald-100 rounded-full">
+            <div className="flex items-center justify-center w-6 h-6 bg-emerald-100 rounded-full border border-emerald-200 shadow-inner">
               <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping absolute"></div>
               <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full relative"></div>
             </div>
-            <span className="text-sm font-black tracking-widest text-emerald-600 uppercase">Live Metrics</span>
+            <span className="text-[10px] font-black tracking-widest text-emerald-600 uppercase">Live System Metrics</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-br from-gray-900 via-emerald-900 to-teal-700 bg-clip-text text-transparent tracking-tighter">
-            Business Overview
+          <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-b from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter">
+            Overview
           </h1>
-          <p className="text-gray-500 font-medium flex items-center gap-2 mt-1 text-lg">
-            Track your store's performance in real-time <Activity size={18} className="text-emerald-500" />
+          <p className="text-gray-500 font-bold flex items-center gap-2 mt-1 text-sm md:text-base">
+            Real-time business performance & stock analytics <Activity size={16} className="text-emerald-500" />
           </p>
         </div>
 
         <button 
           onClick={() => fetchStats(true)}
           disabled={loading || refreshing}
-          className="self-start sm:self-center p-3.5 bg-white border border-gray-200 hover:border-emerald-200 text-gray-600 hover:text-emerald-600 rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center"
+          className="group self-start sm:self-center p-4 bg-white/80 backdrop-blur-md border border-white shadow-[0_8px_20px_rgb(0,0,0,0.04)] hover:shadow-lg hover:border-emerald-100 text-gray-600 hover:text-emerald-600 rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {refreshing ? <Loader2 size={18} className="animate-spin text-emerald-500" /> : <RefreshCw size={18} />}
+          {refreshing ? <Loader2 size={18} className="animate-spin text-emerald-500" /> : <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />}
+          <span className="text-xs font-black tracking-widest uppercase md:hidden">Sync</span>
         </button>
       </div>
 
+      {/* 2. Floating Stat Cards */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
           {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.15)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl group-hover:bg-emerald-400/30 transition-all duration-700 group-hover:scale-150"></div>
-              <div className="relative flex items-center gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+            
+            {/* Revenue Card */}
+            <div className="group bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(16,185,129,0.12)] hover:-translate-y-1 overflow-hidden relative">
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-emerald-400/10 rounded-full blur-2xl group-hover:bg-emerald-400/20 transition-all duration-700 group-hover:scale-150"></div>
+              <div className="relative flex items-center gap-5">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-emerald-400/30 rounded-2xl rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm"></div>
-                  <div className="relative bg-gradient-to-br from-emerald-400 to-teal-600 p-4 rounded-2xl text-white shadow-lg shadow-emerald-200 group-hover:-rotate-3 transition-all duration-500">
-                    <IndianRupee size={32} strokeWidth={2.5} />
+                  <div className="absolute inset-0 bg-emerald-400/30 rounded-[1.2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm"></div>
+                  <div className="relative bg-gradient-to-br from-emerald-400 to-teal-600 p-3.5 rounded-[1.2rem] text-white shadow-xl shadow-emerald-500/20 group-hover:-rotate-3 transition-all duration-500 border border-white/20">
+                    <IndianRupee size={28} strokeWidth={2.5} />
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Total Revenue</p>
-                  <h3 className="text-4xl font-black text-gray-800 tracking-tight">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Revenue</p>
+                  <h3 className="text-3xl font-black text-gray-900 tracking-tighter">
                     ₹{stats.totalRevenue.toLocaleString('en-IN')}
                   </h3>
                 </div>
               </div>
             </div>
 
-            <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(59,130,246,0.15)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl group-hover:bg-blue-400/30 transition-all duration-700 group-hover:scale-150"></div>
-              <div className="relative flex items-center gap-6">
+            {/* Orders Card */}
+            <div className="group bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(59,130,246,0.12)] hover:-translate-y-1 overflow-hidden relative">
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl group-hover:bg-blue-400/20 transition-all duration-700 group-hover:scale-150"></div>
+              <div className="relative flex items-center gap-5">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-blue-400/30 rounded-2xl rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm"></div>
-                  <div className="relative bg-gradient-to-br from-blue-400 to-indigo-600 p-4 rounded-2xl text-white shadow-lg shadow-blue-200 group-hover:-rotate-3 transition-all duration-500">
-                    <ShoppingBag size={32} strokeWidth={2.5} />
+                  <div className="absolute inset-0 bg-blue-400/30 rounded-[1.2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm"></div>
+                  <div className="relative bg-gradient-to-br from-blue-400 to-indigo-600 p-3.5 rounded-[1.2rem] text-white shadow-xl shadow-blue-500/20 group-hover:-rotate-3 transition-all duration-500 border border-white/20">
+                    <ShoppingBag size={28} strokeWidth={2.5} />
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Total Sales</p>
-                  <h3 className="text-4xl font-black text-gray-800 tracking-tight flex items-baseline gap-1">
-                    {stats.totalOrders} <span className="text-lg text-gray-400 font-bold">Orders</span>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Sales</p>
+                  <h3 className="text-3xl font-black text-gray-900 tracking-tighter flex items-baseline gap-1">
+                    {stats.totalOrders} <span className="text-sm text-gray-400 font-bold">Orders</span>
                   </h3>
                 </div>
               </div>
             </div>
 
-            <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.15)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl group-hover:bg-purple-400/30 transition-all duration-700 group-hover:scale-150"></div>
-              <div className="relative flex items-center gap-6">
+            {/* Products Card */}
+            <div className="group bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(168,85,247,0.12)] hover:-translate-y-1 overflow-hidden relative">
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-purple-400/10 rounded-full blur-2xl group-hover:bg-purple-400/20 transition-all duration-700 group-hover:scale-150"></div>
+              <div className="relative flex items-center gap-5">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-purple-400/30 rounded-2xl rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm"></div>
-                  <div className="relative bg-gradient-to-br from-purple-400 to-fuchsia-600 p-4 rounded-2xl text-white shadow-lg shadow-purple-200 group-hover:-rotate-3 transition-all duration-500">
-                    <Package size={32} strokeWidth={2.5} />
+                  <div className="absolute inset-0 bg-purple-400/30 rounded-[1.2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm"></div>
+                  <div className="relative bg-gradient-to-br from-purple-400 to-fuchsia-600 p-3.5 rounded-[1.2rem] text-white shadow-xl shadow-purple-500/20 group-hover:-rotate-3 transition-all duration-500 border border-white/20">
+                    <Package size={28} strokeWidth={2.5} />
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5">Total Items</p>
-                  <h3 className="text-4xl font-black text-gray-800 tracking-tight flex items-baseline gap-1">
-                    {stats.totalProducts} <span className="text-lg text-gray-400 font-bold">Qty</span>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Items</p>
+                  <h3 className="text-3xl font-black text-gray-900 tracking-tighter flex items-baseline gap-1">
+                    {stats.totalProducts} <span className="text-sm text-gray-400 font-bold">Qty</span>
                   </h3>
                 </div>
               </div>
             </div>
 
-            <div className="group relative bg-white/70 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-              <div className={`absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 rounded-full blur-2xl transition-all duration-700 group-hover:scale-150 ${stats.lowStockCount > 0 ? 'bg-rose-400/20 group-hover:bg-rose-400/30' : 'bg-gray-400/20 group-hover:bg-gray-400/30'}`}></div>
-              <div className="relative flex items-center gap-6">
-                <div className={`absolute inset-0 rounded-2xl rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm ${stats.lowStockCount > 0 ? 'bg-rose-400/30' : 'bg-gray-400/30'}`}></div>
-                <div className={`relative p-4 rounded-2xl shadow-lg group-hover:-rotate-3 transition-all duration-500 ${stats.lowStockCount > 0 ? 'bg-gradient-to-br from-rose-400 to-red-600 text-white shadow-rose-200' : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500 shadow-gray-200'}`}>
-                  <AlertTriangle size={32} strokeWidth={2.5} />
+            {/* Low Stock Card */}
+            <div className={`group bg-white/60 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 overflow-hidden relative ${stats.lowStockCount > 0 ? 'border-rose-100 hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)] ring-1 ring-rose-100' : 'border-white'}`}>
+              <div className={`absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 rounded-full blur-2xl transition-all duration-700 group-hover:scale-150 ${stats.lowStockCount > 0 ? 'bg-rose-400/20 group-hover:bg-rose-400/30' : 'bg-gray-400/10 group-hover:bg-gray-400/20'}`}></div>
+              <div className="relative flex items-center gap-5">
+                <div className="relative">
+                  <div className={`absolute inset-0 rounded-[1.2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-sm ${stats.lowStockCount > 0 ? 'bg-rose-400/40' : 'bg-gray-400/20'}`}></div>
+                  <div className={`relative p-3.5 rounded-[1.2rem] text-white shadow-xl group-hover:-rotate-3 transition-all duration-500 border border-white/20 ${stats.lowStockCount > 0 ? 'bg-gradient-to-br from-rose-400 to-red-600 shadow-rose-500/30' : 'bg-gradient-to-br from-gray-300 to-gray-400 shadow-gray-500/10'}`}>
+                    <AlertTriangle size={28} strokeWidth={2.5} />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <p className={`text-xs font-black uppercase tracking-widest mb-1.5 ${stats.lowStockCount > 0 ? 'text-rose-500' : 'text-gray-400'}`}>Low Stock</p>
-                <h3 className="text-4xl font-black text-gray-800 tracking-tight flex items-baseline gap-1">
-                  {stats.lowStockCount} <span className="text-lg text-gray-400 font-bold">Alerts</span>
-                </h3>
+                <div>
+                  <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${stats.lowStockCount > 0 ? 'text-rose-500' : 'text-gray-400'}`}>Low Stock</p>
+                  <h3 className="text-3xl font-black text-gray-900 tracking-tighter flex items-baseline gap-1">
+                    {stats.lowStockCount} <span className="text-sm text-gray-400 font-bold">Alerts</span>
+                  </h3>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 📈 REAL-TIME DATA CHARTS CONTAINER */}
-          <div className="bg-white/70 backdrop-blur-2xl border border-white rounded-[2.5rem] p-6 sm:p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.08)] transition-all duration-500">
-            <div className="flex items-center gap-2.5 mb-6">
-              <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600 border border-emerald-100">
-                <BarChart3 size={18} />
+          {/* 📈 3. REAL-TIME DATA CHARTS CONTAINER */}
+          <div className="bg-white/60 backdrop-blur-3xl border border-white rounded-[2.5rem] p-6 sm:p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_60px_-15px_rgba(16,185,129,0.08)] transition-all duration-500">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-2.5 bg-white border border-emerald-100 rounded-xl text-emerald-600 shadow-sm">
+                <BarChart3 size={20} strokeWidth={2.5} />
               </div>
               <div>
-                <h3 className="font-black text-gray-900 tracking-tight text-lg">Sales Performance Trends</h3>
-                <p className="text-xs text-gray-400 font-medium">Daily processed invoice amounts pipeline</p>
+                <h3 className="font-black text-gray-900 tracking-tight text-lg">Sales Trends</h3>
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5">Daily processed invoice amounts</p>
               </div>
             </div>
 
             <div className="w-full h-[320px] font-mono text-xs">
               {!stats.chartData || stats.chartData.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-gray-400 font-sans font-bold">
-                  No chart data available yet. Process checkout orders to build logs!
+                <div className="h-full flex items-center justify-center text-gray-400 font-sans font-bold bg-white/40 rounded-2xl border border-dashed border-gray-200">
+                  Process orders in POS to generate analytics!
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" stroke="#94a3b8" tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: '#1e293b', borderRadius: '14px', border: 'none', color: '#fff', fontWeight: 'bold' }} />
-                    <Area type="monotone" dataKey="Sales" stroke="#10b981" strokeWidth={3.5} fillOpacity={1} fill="url(#colorSales)" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="name" stroke="#94a3b8" tickLine={false} axisLine={false} dy={10} fontFamily="inherit" />
+                    <YAxis stroke="#94a3b8" tickLine={false} axisLine={false} dx={-10} fontFamily="inherit" />
+                    <Tooltip 
+                      contentStyle={{ background: '#0f172a', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 'bold', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)' }} 
+                      itemStyle={{ color: '#10b981', fontSize: '16px' }}
+                    />
+                    <Area type="monotone" dataKey="Sales" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorSales)" />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
             </div>
           </div>
 
-          {/* ⚠️ NAYA: LOW STOCK ACTION CENTER WIDGET */}
+          {/* ⚠️ 4. LOW STOCK ACTION CENTER WIDGET */}
           {stats.lowStockCount > 0 && (
-            <div className="bg-rose-50/50 backdrop-blur-2xl border border-rose-100 rounded-[2.5rem] p-6 sm:p-8 shadow-lg animate-in slide-in-from-bottom-5 duration-500">
-              <div className="flex items-center gap-2.5 mb-6">
-                <div className="p-2.5 bg-rose-100 rounded-xl text-rose-600 border border-rose-200">
-                  <AlertTriangle size={18} className="animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="font-black text-rose-900 tracking-tight text-lg">Action Required: Low Stock Items</h3>
-                  <p className="text-xs text-rose-500 font-bold uppercase tracking-widest">Immediate restock recommended</p>
+            <div className="bg-white/60 backdrop-blur-3xl border border-rose-100 rounded-[2.5rem] p-6 sm:p-8 shadow-[0_20px_60px_-15px_rgba(244,63,94,0.1)] animate-in slide-in-from-bottom-8 duration-500 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-rose-400/10 rounded-full blur-3xl -z-10"></div>
+              
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8 justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-2xl text-rose-500 shadow-inner">
+                    <AlertTriangle size={20} strokeWidth={2.5} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-rose-950 tracking-tight text-lg">Action Required</h3>
+                    <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest mt-0.5">Immediate restock recommended</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[500px]">
                   <thead>
-                    <tr className="border-b border-rose-200/50">
-                      <th className="py-3 px-4 text-xs font-black text-rose-400 uppercase tracking-widest">Item Name</th>
-                      <th className="py-3 px-4 text-xs font-black text-rose-400 uppercase tracking-widest">Current Stock</th>
-                      <th className="py-3 px-4 text-xs font-black text-rose-400 uppercase tracking-widest text-right">Quick Restock</th>
+                    <tr className="border-b border-rose-100/50">
+                      <th className="py-4 px-4 text-[10px] font-black text-rose-400 uppercase tracking-widest">Item Details</th>
+                      <th className="py-4 px-4 text-[10px] font-black text-rose-400 uppercase tracking-widest text-center">Status</th>
+                      <th className="py-4 px-4 text-[10px] font-black text-rose-400 uppercase tracking-widest text-right">Quick Restock</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats.lowStockItems.map((item: any) => (
-                      <tr key={item._id} className="border-b border-rose-100/50 last:border-0 hover:bg-white/50 transition-colors">
-                        <td className="py-4 px-4 font-bold text-gray-800 text-sm">{item.name}</td>
-                        <td className="py-4 px-4">
-                          <span className="bg-rose-100 text-rose-700 font-black px-3 py-1 rounded-lg text-xs">
-                            {item.stock_quantity} left
+                      <tr key={item._id} className="border-b border-rose-50 last:border-0 hover:bg-white/50 transition-colors group">
+                        <td className="py-5 px-4 font-bold text-gray-900 text-sm">{item.name}</td>
+                        <td className="py-5 px-4 text-center">
+                          <span className="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-rose-600 font-black px-3 py-1.5 rounded-xl text-xs shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                            {item.stock_quantity} Left
                           </span>
                         </td>
-                        <td className="py-4 px-4 text-right">
+                        <td className="py-5 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <input 
                               type="number"
@@ -257,11 +279,11 @@ export default function DashboardPage() {
                               placeholder="+ Qty"
                               value={restockValues[item._id] || ''}
                               onChange={(e) => setRestockValues({ ...restockValues, [item._id]: Number(e.target.value) })}
-                              className="w-20 bg-white border border-rose-200 rounded-xl py-2 px-3 text-xs font-bold outline-none focus:border-rose-500 text-gray-700"
+                              className="w-24 bg-white/80 border border-rose-200 rounded-xl py-2.5 px-3 text-xs font-bold outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-500/10 text-gray-800 shadow-sm transition-all text-center"
                             />
                             <button 
                               onClick={() => handleRestock(item._id)}
-                              className="bg-gray-900 hover:bg-emerald-500 text-white p-2 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center"
+                              className="bg-gray-900 hover:bg-emerald-500 text-white p-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center border border-gray-800 hover:border-emerald-400"
                             >
                               <Plus size={16} strokeWidth={3} />
                             </button>
