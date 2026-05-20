@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Package, Zap, Lock,Receipt,Users,Settings } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Zap, Lock,Receipt,Users,Settings,Home } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -34,6 +34,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { name: 'Order History', href: '/orders', icon: Receipt, isProtected: false },
     { name: 'Customers & Khata', href: '/customers', icon: Users, isProtected: false },
     { name: 'Store Settings', href: '/settings', icon: Settings, isProtected: true },
+    { name: 'Home Website', href: '/', icon: Home, isProtected: false },
   ];
 
   return (
