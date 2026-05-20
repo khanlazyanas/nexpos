@@ -34,7 +34,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { name: 'Order History', href: '/orders', icon: Receipt, isProtected: false },
     { name: 'Customers & Khata', href: '/customers', icon: Users, isProtected: false },
     { name: 'Store Settings', href: '/settings', icon: Settings, isProtected: true },
-    { name: 'Home Website', href: '/', icon: Home, isProtected: false },
+    { name: 'NexPOS Home', href: '/', icon: Home, isProtected: false },
   ];
 
   return (
