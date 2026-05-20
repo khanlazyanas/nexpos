@@ -9,29 +9,46 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBill, setSelectedBill] = useState<any | null>(null);
+  
+  // 🛠️ NAYA: Store settings fetch karne ke liye state
+  const [storeSettings, setStoreSettings] = useState({
+    storeName: 'NexPOS Pro',
+    storeAddress: 'Lucknow, Uttar Pradesh'
+  });
 
-  // API se Orders fetch karna (Aapki API ke hisaab se direct array aayega)
-  const fetchOrders = async () => {
-    try {
-      const res = await fetch('/api/orders');
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data);
-      } else {
-        toast.error("Failed to load orders");
-      }
-    } catch (error) {
-      toast.error("Network error!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // API se Orders aur Settings dono fetch karna
   useEffect(() => {
-    fetchOrders();
+    const fetchInitialData = async () => {
+      try {
+        // Fetch Orders
+        const resOrders = await fetch('/api/orders');
+        if (resOrders.ok) {
+          const data = await resOrders.json();
+          setOrders(data);
+        } else {
+          toast.error("Failed to load orders");
+        }
+
+        // 🛠️ NAYA: Fetch Store Settings for Thermal Receipt
+        const resSettings = await fetch('/api/settings');
+        if (resSettings.ok) {
+          const settingsData = await resSettings.json();
+          if (settingsData && settingsData.storeName) {
+            setStoreSettings(settingsData);
+          }
+        }
+
+      } catch (error) {
+        toast.error("Network error!");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchInitialData();
   }, []);
 
-  // Refund Handle Karna
+  // Refund Handle Karna (Code wahi hai)
   const handleRefund = async (orderId: string) => {
     if (!confirm("Are you sure you want to refund this order? Inventory will be restored.")) return;
     
@@ -45,7 +62,9 @@ export default function OrdersPage() {
 
       if (res.ok && data.success) {
         toast.success(data.message, { style: { borderRadius: '12px', background: '#333', color: '#fff' }});
-        fetchOrders(); // Refresh table after refund
+        // Sirf orders refresh karo refund ke baad
+        const refreshRes = await fetch('/api/orders');
+        if (refreshRes.ok) setOrders(await refreshRes.json());
       } else {
         toast.error(data.error || "Refund failed");
       }
@@ -66,7 +85,7 @@ export default function OrdersPage() {
   return (
     <div className="relative h-full flex flex-col gap-6">
       
-      {/* 🖨️ SMART PRINT CSS (Hide everything except the receipt when printing) */}
+      {/* 🖨️ SMART PRINT CSS */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body * { visibility: hidden; }
@@ -154,7 +173,6 @@ export default function OrdersPage() {
                         
                         <td className="py-4 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {/* Reprint Button */}
                             <button 
                               onClick={() => setSelectedBill(order)}
                               className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95"
@@ -162,7 +180,6 @@ export default function OrdersPage() {
                               <Printer size={14} /> Print
                             </button>
                             
-                            {/* Refund Button */}
                             {!isRefunded && (
                               <button 
                                 onClick={() => handleRefund(order._id)}
@@ -197,9 +214,12 @@ export default function OrdersPage() {
 
             <div id="thermal-receipt" className="bg-white p-6 rounded-xl shadow-inner border border-gray-200 text-sm">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-black text-gray-900">NexPOS Pro</h2>
-                <p className="text-gray-500 text-xs font-bold mt-1">Lucknow, Uttar Pradesh</p>
+                {/* 🛠️ NAYA: DYNAMIC STORE NAME & ADDRESS FROM DATABASE */}
+                <h2 className="text-2xl font-black text-gray-900 uppercase">{storeSettings.storeName}</h2>
+                <p className="text-gray-500 text-xs font-bold mt-1 max-w-[200px] mx-auto leading-tight">{storeSettings.storeAddress}</p>
+                
                 <div className="border-b-2 border-dashed border-gray-300 my-4"></div>
+                
                 <p className="text-xs font-semibold text-gray-600">Date: {new Date(selectedBill.createdAt || selectedBill.date).toLocaleString()}</p>
                 <p className="text-xs font-semibold text-gray-600 mt-1">Bill No: #{selectedBill._id?.slice(-6).toUpperCase()}</p>
                 <p className="text-xs font-semibold text-gray-600 mt-1">Customer: {selectedBill.customerName || 'Walk-in'}</p>
