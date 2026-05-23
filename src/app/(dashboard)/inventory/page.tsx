@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
   Package, Plus, Search, Edit3, Trash2, AlertTriangle, 
   ArrowUpRight, Barcode, Loader2, ArrowDownCircle, 
-  ArrowUpCircle, ShoppingBag, Layers, X, Wand2, CheckCircle2
+  ArrowUpCircle, ShoppingBag, Layers, X, Wand2, CheckCircle2,
+  Printer, Tag // 🛠️ Naye icons Barcode print ke liye
 } from 'lucide-react';
 
 export default function InventoryPage() {
@@ -18,6 +19,10 @@ export default function InventoryPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 🚀 FEATURE 4: BARCODE PRINT STATE
+  const [printItem, setPrintItem] = useState<any>(null);
+
   const [formData, setFormData] = useState({
     name: '',
     barcode_sku: '',
@@ -277,17 +282,29 @@ export default function InventoryPage() {
                     <StockBadge quantity={product.stock_quantity} />
                   </td>
                   <td className="px-8 py-5 text-right">
-                    {/* 🛠️ FIX: opacity-100 on mobile, hover reveal on desktop md+ */}
                     <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      
+                      {/* 🚀 NEW: PRINT BARCODE BUTTON */}
+                      <button 
+                        onClick={() => setPrintItem(product)}
+                        className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm active:scale-95"
+                        title="Print Barcode Label"
+                      >
+                        <Printer size={16} strokeWidth={2.5} />
+                      </button>
+
                       <button 
                         onClick={() => openEditModal(product)}
-                        className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm active:scale-95"
+                        className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm active:scale-95"
+                        title="Edit Product"
                       >
                         <Edit3 size={16} strokeWidth={2.5} />
                       </button>
+
                       <button 
                         onClick={() => handleDeleteProduct(product._id, product.name)}
                         className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all shadow-sm active:scale-95"
+                        title="Delete Product"
                       >
                         <Trash2 size={16} strokeWidth={2.5} />
                       </button>
@@ -299,6 +316,49 @@ export default function InventoryPage() {
           </table>
         </div>
       </div>
+
+      {/* 🚀 BARCODE PRINT MODAL */}
+      {printItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          {/* Print specific CSS */}
+          <style dangerouslySetInnerHTML={{__html: `
+            @media print { 
+              body * { visibility: hidden; } 
+              #barcode-sticker, #barcode-sticker * { visibility: visible; } 
+              #barcode-sticker { position: absolute; left: 0; top: 0; width: 50mm; height: 30mm; padding: 2mm; margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; border: none !important; box-shadow: none !important; } 
+              .no-print { display: none !important; } 
+            }
+          `}} />
+
+          <div className="bg-white/90 backdrop-blur-3xl rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white animate-in zoom-in-95">
+            <div className="flex justify-between items-center mb-6 no-print border-b border-gray-100 pb-4">
+              <h3 className="font-black text-xl flex items-center gap-2 text-gray-900"><Tag size={20} className="text-emerald-500"/> Print Label</h3>
+              <button onClick={() => setPrintItem(null)} className="p-2 bg-white hover:bg-rose-50 border border-gray-100 text-gray-400 hover:text-rose-500 rounded-full transition-colors shadow-sm"><X size={18} strokeWidth={3}/></button>
+            </div>
+
+            {/* 🔥 ACTUAL PRINTABLE STICKER AREA */}
+            <div id="barcode-sticker" className="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-4 flex flex-col items-center justify-center mx-auto w-[60mm] h-[40mm] shadow-inner">
+              <p className="text-[10px] font-black text-gray-900 truncate w-full text-center mb-1 leading-tight uppercase tracking-widest">{printItem.name}</p>
+              <div className="bg-white p-1.5 rounded-lg">
+                {/* BWIP-JS Free Barcode API (Code128 Format) */}
+                <img 
+                  src={`https://bwipjs-api.metafloor.com/?bcid=code128&text=${printItem.barcode_sku || '000000'}&scale=3&height=10&includetext`} 
+                  alt="Barcode" 
+                  className="h-12 object-contain"
+                />
+              </div>
+              <p className="text-sm font-black text-emerald-600 mt-2">₹{printItem.price}</p>
+            </div>
+
+            <button 
+              onClick={() => window.print()}
+              className="no-print w-full mt-8 bg-gray-900 hover:bg-emerald-600 text-white font-black py-4.5 rounded-[1.2rem] flex items-center justify-center gap-2 uppercase tracking-widest text-xs transition-all shadow-[0_8px_20px_rgb(0,0,0,0.15)] active:scale-95"
+            >
+              <Printer size={18} strokeWidth={2.5} /> Print via Thermal Printer
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 🚀 ADD / EDIT PRODUCT MODALS */}
       {(isAddModalOpen || isEditModalOpen) && (
