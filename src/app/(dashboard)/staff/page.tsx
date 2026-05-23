@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Plus, Loader2, ShieldCheck, Mail, Lock, UserCircle, Zap, X } from 'lucide-react';
+import { Users, Plus, Loader2, ShieldCheck, Mail, Lock, UserCircle, Zap, X, Trash2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function StaffPage() {
@@ -47,7 +47,7 @@ export default function StaffPage() {
         toast.success("Cashier account created successfully!", { style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
         setIsModalOpen(false);
         setForm({ name: '', email: '', password: '' });
-        fetchStaff(); // Refresh the list
+        fetchStaff(); 
       } else {
         toast.error(data.error || "Failed to create account");
       }
@@ -55,6 +55,26 @@ export default function StaffPage() {
       toast.error("Technical error occurred");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // 🛠️ NAYA: Delete Handle function
+  const handleDeleteStaff = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to revoke system access for ${name}? This action cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(`/api/staff?id=${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        toast.success(`${name}'s access has been revoked.`, { style: { background: '#e11d48', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
+        fetchStaff(); 
+      } else {
+        toast.error("Failed to remove staff member.");
+      }
+    } catch (error) {
+      toast.error("Network error while deleting.");
     }
   };
 
@@ -102,19 +122,20 @@ export default function StaffPage() {
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest">Team Member</th>
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest">Email Access ID</th>
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-center">System Role</th>
+                <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="py-24 text-center">
+                  <td colSpan={4} className="py-24 text-center">
                     <Loader2 className="animate-spin mx-auto text-emerald-500 mb-3" size={40} />
                     <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Fetching Team Data...</p>
                   </td>
                 </tr>
               ) : staff.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-24 text-center text-gray-400">
+                  <td colSpan={4} className="py-24 text-center text-gray-400">
                     <Users size={48} className="mx-auto mb-3 opacity-20" />
                     <p className="font-bold text-sm">No cashiers found. Add your first team member!</p>
                   </td>
@@ -142,6 +163,18 @@ export default function StaffPage() {
                       <span className="inline-flex items-center justify-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-600 font-black px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-widest shadow-sm">
                         <ShieldCheck size={14} /> Cashier
                       </span>
+                    </td>
+                    {/* 🛠️ NAYA: Delete Actions Column */}
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleDeleteStaff(member._id, member.name)}
+                          className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all shadow-sm active:scale-95"
+                          title="Revoke Access"
+                        >
+                          <Trash2 size={16} strokeWidth={2.5} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
