@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Printer, Receipt, Loader2, Calendar, User, Phone, X, RefreshCcw, QrCode, CheckCircle2 } from 'lucide-react';
+import { Search, Printer, Receipt, Loader2, Calendar, User, Phone, X, RefreshCcw, QrCode, CheckCircle2, FileSpreadsheet } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function OrdersPage() {
@@ -66,6 +66,46 @@ export default function OrdersPage() {
     }
   };
 
+  // 🚀 FEATURE: EXPORT TO CSV (GST CA REPORT)
+  const downloadCSV = () => {
+    if (orders.length === 0) {
+      toast.error("No data to export!");
+      return;
+    }
+
+    // Headers for the Excel/CSV file
+    const headers = ['Order ID', 'Date', 'Customer Name', 'Customer Mobile', 'Items Sold', 'Status', 'Total Paid (Rs)', 'Payment Mode'];
+
+    // Map the order data to match headers
+    const csvData = orders.map(order => {
+      const itemsString = order.items?.map((i: any) => `${i.productName || i.name} (x${i.quantity || i.cartQuantity})`).join(' | ') || 'N/A';
+      return [
+        order._id?.slice(-6).toUpperCase() || 'N/A',
+        new Date(order.createdAt || order.date).toLocaleDateString('en-IN'),
+        order.customerName || 'Walk-in Customer',
+        order.customerPhone || order.customerMobile || 'N/A',
+        itemsString,
+        order.status || 'Completed',
+        order.totalAmount || 0,
+        order.paymentMethod || 'Cash'
+      ].map(field => `"${field}"`).join(','); 
+    });
+
+    // Generate CSV string and trigger download
+    const csvString = [headers.join(','), ...csvData].join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `NexPOS_GST_Report_${new Date().toLocaleDateString('en-IN')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("GST Report Downloaded!", { style: { background: '#10b981', color: '#fff', fontWeight: 'bold' }});
+  };
+
   const filteredOrders = orders.filter(order => {
     const searchLower = searchQuery.toLowerCase();
     const orderId = order._id?.toLowerCase() || '';
@@ -93,17 +133,28 @@ export default function OrdersPage() {
           </p>
         </div>
 
-        <div className="w-full md:w-96 group relative">
-          <div className="absolute inset-y-0 left-5 flex items-center text-gray-400 group-focus-within:text-emerald-500 transition-colors">
-            <Search size={20} />
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          <div className="w-full md:w-72 group relative">
+            <div className="absolute inset-y-0 left-5 flex items-center text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+              <Search size={20} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="Search ID, Phone..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-14 pr-6 py-4 bg-white/60 backdrop-blur-xl border border-white rounded-[1.5rem] outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all font-bold text-gray-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] placeholder:font-medium"
+            />
           </div>
-          <input 
-            type="text" 
-            placeholder="Search by ID, Phone, or Name..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-14 pr-6 py-4 bg-white/60 backdrop-blur-xl border border-white rounded-[1.5rem] outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all font-bold text-gray-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] placeholder:font-medium"
-          />
+          
+          <button 
+            onClick={downloadCSV}
+            className="group relative overflow-hidden flex items-center justify-center gap-2 w-full sm:w-auto bg-emerald-500 text-white hover:bg-emerald-600 px-6 py-4 rounded-[1.5rem] font-black shadow-lg shadow-emerald-500/20 transition-all duration-300 active:scale-95"
+          >
+             <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"></div>
+             <FileSpreadsheet size={20} strokeWidth={2.5} className="relative z-10" />
+             <span className="relative z-10 tracking-widest uppercase text-xs">Export</span>
+          </button>
         </div>
       </div>
 
@@ -157,7 +208,7 @@ export default function OrdersPage() {
                             {order.customerName || 'Walk-in Customer'}
                           </p>
                           <p className="text-[10px] font-bold text-gray-400 flex items-center gap-2 ml-8">
-                            <Phone size={10} /> {order.customerPhone || 'N/A'}
+                            <Phone size={10} /> {order.customerPhone || order.customerMobile || 'N/A'}
                           </p>
                         </div>
                       </td>
@@ -257,9 +308,9 @@ export default function OrdersPage() {
                     <div key={i} className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
                         <span className="font-bold text-gray-900 block">{item.productName || item.name}</span>
-                        <span className="text-gray-500 font-semibold">{item.quantity} x ₹{item.price}</span>
+                        <span className="text-gray-500 font-semibold">{item.quantity || item.cartQuantity} x ₹{item.price}</span>
                       </div>
-                      <span className="font-black text-gray-900">₹{item.price * item.quantity}</span>
+                      <span className="font-black text-gray-900">₹{item.price * (item.quantity || item.cartQuantity)}</span>
                     </div>
                   ))}
                 </div>
