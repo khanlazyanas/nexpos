@@ -52,6 +52,21 @@ export default function POSPage() {
     }
   };
 
+  // 🚀 WhatsApp Handle Function
+  const handleWhatsApp = () => {
+    if (!receiptData?.customerMobile) {
+      toast.error("Customer mobile number not found!");
+      return;
+    }
+    const message = `*Receipt from NexPOS*\n\n` +
+                    `Order ID: #${receiptData.orderId.split('-')[1]}\n` +
+                    `Total Amount: ₹${receiptData.finalTotal}\n` +
+                    `Items: ${receiptData.items.map((i: any) => i.name).join(', ')}\n\n` +
+                    `Thank you for shopping with us!`;
+    const whatsappUrl = `https://wa.me/91${receiptData.customerMobile}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleAddToCart = (product: IProduct) => {
     const cartItem = cart.find(item => item._id === product._id);
     const currentQtyInCart = cartItem ? cartItem.cartQuantity : 0;
@@ -396,6 +411,15 @@ export default function POSPage() {
               {/* Torn Paper Bottom Effect */}
               <div className="absolute bottom-0 left-0 w-full h-3 bg-[linear-gradient(-45deg,#fff_4px,transparent_4px),linear-gradient(45deg,#fff_4px,transparent_4px)] bg-[length:8px_8px] -mb-1 drop-shadow-sm rotate-180"></div>
             </div>
+
+            {/* 🚀 WhatsApp Integration Button */}
+            <button 
+              onClick={handleWhatsApp}
+              className="no-print flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-black py-4 rounded-2xl shadow-lg transition-transform active:scale-95 mb-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.003 3.238l-.58 2.16 2.255-.594c.909.525 1.854.794 2.805.795h.005c3.181 0 5.767-2.586 5.768-5.766.001-3.181-2.586-5.767-5.768-5.767z"/></svg>
+              SEND ON WHATSAPP
+            </button>
 
             {/* Action Buttons */}
             <div className="no-print flex gap-3">
