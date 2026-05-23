@@ -2,174 +2,142 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, User, ShieldCheck, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { User, Mail, Lock, Loader2, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function RegisterPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Cashier'); // Default Cashier
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
 
     try {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        // 🛠️ YAHAN DHYAN DEIN: Role ab default 'Admin' jayega backend ko, dropdown hat gaya hai
+        body: JSON.stringify({ ...form, role: 'Admin' }) 
       });
 
       const data = await res.json();
 
-      if (!res.ok) {
-        // 🛠️ Professional English Error Alert
-        setError(data.error || 'Failed to create account. Please try again.');
-        setLoading(false);
+      if (res.ok) {
+        toast.success("Workspace Created Successfully!", {
+          style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }
+        });
+        setTimeout(() => router.push('/login'), 1500);
       } else {
-        // 🛠️ Professional English Success Alert
-        setSuccess('Registration successful! Redirecting to login page...');
-        setLoading(false);
-        
-        // 2 second baad login page par bhej do
-        setTimeout(() => {
-          router.push('/login');
-        }, 2000);
+        toast.error(data.error || "Registration failed. Try again.");
       }
-    } catch (err) {
-      console.error(err);
-      setError('A technical error occurred. Please contact system admin.');
+    } catch (error) {
+      toast.error("Network error occurred");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-emerald-950 to-teal-950 px-4 overflow-hidden">
-      
-      {/* Background Premium Glow Effects */}
-      <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-teal-500/10 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-      <div className="bottom-1/4 left-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse duration-3000"></div>
+    <div className="min-h-screen relative flex items-center justify-center p-4 sm:p-8 overflow-hidden bg-[#f8fafc] font-sans">
+      <Toaster position="top-center" />
 
-      {/* Main Glassmorphic Box */}
-      <div className="w-full max-w-md bg-white/5 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-8 sm:p-10 relative z-10 animate-in fade-in zoom-in-95 duration-500">
+      {/* 🌌 Ultra-Premium Dynamic Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] -z-20"></div>
+      <div className="absolute left-[-10%] top-[-10%] -z-10 h-[500px] w-[500px] rounded-full bg-emerald-400 opacity-20 blur-[120px] animate-pulse duration-[5000ms]"></div>
+      <div className="absolute right-[-10%] bottom-[-10%] -z-10 h-[500px] w-[500px] rounded-full bg-teal-300/30 blur-[120px] animate-pulse delay-1000 duration-[7000ms]"></div>
+
+      {/* Main Glass Card */}
+      <div className="relative z-10 w-full max-w-[480px] bg-white/60 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.08)] border border-white p-8 md:p-12 transition-all duration-500">
         
-        {/* Logo / Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex bg-gradient-to-br from-emerald-400 to-teal-500 p-3.5 rounded-2xl text-white shadow-lg shadow-emerald-900/30 mb-4 animate-bounce duration-2000">
-            <Sparkles size={28} />
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-[1.2rem] shadow-xl shadow-emerald-500/20 mb-6 border border-white/20">
+            <Zap size={28} className="text-white fill-white animate-pulse" />
           </div>
-          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-emerald-400 tracking-tighter">
-            Create Account
+          <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-b from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter mb-2">
+            Create Workspace
           </h1>
-          <p className="text-xs font-bold text-emerald-500/70 uppercase tracking-widest mt-1.5">
-            Join NexPOS System
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            Register as Store Admin
           </p>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-5 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2.5 animate-in shake duration-300">
-            <AlertCircle size={18} className="shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Success Alert */}
-        {success && (
-          <div className="mb-5 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2.5 animate-in fade-in duration-300">
-            <CheckCircle2 size={18} className="shrink-0" />
-            <span>{success}</span>
-          </div>
-        )}
-
-        {/* Register Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Full Name */}
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
-            <div className="relative">
-              <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-4">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-5 flex items-center text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+                <User size={18} strokeWidth={2.5} />
+              </div>
               <input 
-                type="text" required placeholder="e.g. Anas Khan" value={name} onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm shadow-inner"
+                type="text" 
+                required
+                placeholder="Full Name" 
+                value={form.name}
+                onChange={(e) => setForm({...form, name: e.target.value})}
+                className="w-full pl-14 pr-6 py-4 bg-white/60 backdrop-blur-md border border-white rounded-[1.2rem] outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all font-bold text-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] placeholder:text-gray-400"
+              />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-5 flex items-center text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+                <Mail size={18} strokeWidth={2.5} />
+              </div>
+              <input 
+                type="email" 
+                required
+                placeholder="Work Email" 
+                value={form.email}
+                onChange={(e) => setForm({...form, email: e.target.value})}
+                autoComplete="email" 
+                autoCapitalize="none"
+                className="w-full pl-14 pr-6 py-4 bg-white/60 backdrop-blur-md border border-white rounded-[1.2rem] outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all font-bold text-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] placeholder:text-gray-400"
+              />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-5 flex items-center text-gray-400 group-focus-within:text-emerald-500 transition-colors">
+                <Lock size={18} strokeWidth={2.5} />
+              </div>
+              <input 
+                type="password" 
+                required
+                placeholder="Secure Password" 
+                value={form.password}
+                onChange={(e) => setForm({...form, password: e.target.value})}
+                className="w-full pl-14 pr-6 py-4 bg-white/60 backdrop-blur-md border border-white rounded-[1.2rem] outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all font-bold text-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] placeholder:text-gray-400"
               />
             </div>
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
-            <div className="relative">
-              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="email" required placeholder="e.g. anas@nexpos.com" value={email} onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email" autoCapitalize="none"
-                className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm shadow-inner"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
-            <div className="relative">
-              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="password" required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm shadow-inner"
-              />
-            </div>
-          </div>
-
-          {/* Role Dropdown */}
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">System Role</label>
-            <div className="relative">
-              <ShieldCheck size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select 
-                value={role} onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold transition-all text-sm shadow-inner appearance-none cursor-pointer"
-              >
-                <option value="Cashier" className="bg-slate-900 text-white">Cashier (Staff)</option>
-                <option value="Admin" className="bg-slate-900 text-white">Admin (Owner)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <div className="pt-3">
-            <button 
-              type="submit" disabled={loading}
-              className="group relative overflow-hidden w-full bg-gradient-to-r from-emerald-500 to-teal-500 disabled:from-slate-700 disabled:to-slate-800 disabled:text-slate-400 font-extrabold py-3.5 rounded-xl sm:rounded-2xl text-white tracking-wide shadow-lg shadow-emerald-950/50 transition-all active:scale-[0.98] disabled:cursor-not-allowed"
-            >
-              {!loading && (
-                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"></div>
-              )}
-              <span className="relative z-10 text-sm">
-                {loading ? 'Creating Account...' : 'Register User'}
-              </span>
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="group relative overflow-hidden w-full bg-gray-900 text-white hover:bg-emerald-600 py-4.5 rounded-[1.2rem] font-black tracking-widest uppercase text-xs shadow-[0_8px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98] disabled:opacity-50 mt-6 flex items-center justify-center gap-2"
+          >
+            {!loading && <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"></div>}
+            {loading ? <Loader2 size={18} className="animate-spin relative z-10" /> : <ShieldCheck size={18} className="relative z-10" />}
+            <span className="relative z-10">{loading ? 'CREATING WORKSPACE...' : 'CREATE ADMIN ACCOUNT'}</span>
+          </button>
         </form>
 
-        {/* Link to Login Page */}
-        <div className="mt-6 text-center text-xs font-medium text-slate-400">
-          Already have an account?{' '}
-          <Link href="/login" className="text-emerald-400 font-bold hover:underline">
-            Login here
-          </Link>
+        <div className="mt-8 text-center">
+          <p className="text-sm font-bold text-gray-500">
+            Already have an account?{' '}
+            <Link href="/login" className="text-emerald-600 hover:text-emerald-500 hover:underline underline-offset-4 transition-colors">
+              Sign in securely <ArrowRight size={14} className="inline mb-0.5" />
+            </Link>
+          </p>
         </div>
 
       </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+      `}} />
     </div>
   );
 }
