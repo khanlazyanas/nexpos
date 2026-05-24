@@ -52,17 +52,22 @@ export default function POSPage() {
     }
   };
 
-  // 🚀 WhatsApp Handle Function
+  // 🚀 UPDATED: WhatsApp Handle Function (Digital SaaS Link)
   const handleWhatsApp = () => {
     if (!receiptData?.customerMobile) {
       toast.error("Customer mobile number not found!");
       return;
     }
+
+    // Live Domain URL Link generate hoga order ID ke sath
+    const receiptLink = `${window.location.origin}/receipt/${receiptData.orderId}`;
+
     const message = `*Receipt from NexPOS*\n\n` +
                     `Order ID: #${receiptData.orderId.split('-')[1]}\n` +
-                    `Total Amount: ₹${receiptData.finalTotal}\n` +
-                    `Items: ${receiptData.items.map((i: any) => i.name).join(', ')}\n\n` +
+                    `Total Amount: ₹${receiptData.finalTotal}\n\n` +
+                    `Click the link below to view your digital receipt:\n${receiptLink}\n\n` +
                     `Thank you for shopping with us!`;
+
     const whatsappUrl = `https://wa.me/91${receiptData.customerMobile}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
