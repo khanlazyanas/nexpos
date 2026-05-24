@@ -3,13 +3,21 @@
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ShoppingCart, LayoutDashboard, Package, Sparkles, Zap, LogOut, Users, BarChart3, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ShoppingCart, LayoutDashboard, Package, Sparkles, Zap, LogOut, Users, BarChart3, ShieldCheck, Loader2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
 
 export default function Home() {
-  const sessionContext = useSession(); 
-  const session = sessionContext?.data;
+  // 🛠️ FIX 1: Extract both 'data' and 'status' from session
+  const { data: session, status } = useSession(); 
   const router = useRouter();
+
+  // 🛠️ FIX 2: Strict Session Check (Redirects silent logouts immediately)
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    }
+  }, [status, router]);
 
   // 🛡️ Protected Navigation Logic
   const handleProtectedNavigation = (path: string) => {
@@ -32,6 +40,19 @@ export default function Home() {
       router.push(path);
     }
   };
+
+  // 🛠️ FIX 3: Show a premium loader while session is resolving (prevents premature clicks)
+  if (status === 'loading') {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#f4f7f6]">
+        <Loader2 className="animate-spin text-emerald-500 mb-4" size={48} />
+        <p className="text-xs font-black tracking-widest uppercase text-gray-400 animate-pulse">Verifying Session...</p>
+      </div>
+    );
+  }
+
+  // Hide the page completely if they are not authenticated (avoids UI flashing before redirect)
+  if (status === 'unauthenticated') return null;
 
   return (
     <div className="min-h-[100dvh] relative flex items-center justify-center p-4 sm:p-8 overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-900 bg-[#f4f7f6] font-sans antialiased">
