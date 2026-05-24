@@ -3,61 +3,81 @@ import connectToDatabase from '@/lib/db';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 
-export const dynamic = 'force-dynamic'; // Ye line Next.js ko hamesha fresh data lane ko kehti hai
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     await connectToDatabase();
 
-    // 1. Orders se Revenue aur Total Sales calculate karna
     const orders = await Order.find();
-    
     let totalRevenue = 0;
     const totalOrders = orders.length;
-    
-    // Chart Data ke liye rozana ki kamai ka hisaab rakhne wala object
     const dailySalesMap: { [key: string]: number } = {};
 
-    orders.forEach((order) => {
-      // Total revenue calculate karna
-      totalRevenue += order.totalAmount;
+    // For Today's Summary
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let todayBills = 0;
+    let todayCash = 0;
+    let todayOnline = 0;
 
-      // Order ki date nikalna (Agar createdAt nahi hai toh fallback current date)
+    // For Top Products
+    const productCount: Record<string, number> = {};
+
+    orders.forEach((order) => {
+      totalRevenue += order.totalAmount;
+      
       const rawDate = order.createdAt || order.date || new Date();
       const dateObj = new Date(rawDate);
-      
-      // Date ko chote format me badalna (e.g., "19 May")
       const dateStr = dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
-      // Us din ki sales me amount jodna
-      if (!dailySalesMap[dateStr]) {
-        dailySalesMap[dateStr] = 0;
-      }
+      // Build daily map for main chart
+      if (!dailySalesMap[dateStr]) dailySalesMap[dateStr] = 0;
       dailySalesMap[dateStr] += order.totalAmount;
+
+      // Calculate Today's Stats
+      if (dateObj >= today) {
+        todayBills += 1;
+        if (order.paymentMethod === 'Cash') todayCash += order.totalAmount;
+        else todayOnline += order.totalAmount;
+      }
+
+      // Calculate Top Products
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach((item: any) => {
+          const name = item.productName || item.name || 'Unknown';
+          const qty = item.quantity || item.cartQuantity || 1;
+          productCount[name] = (productCount[name] || 0) + qty;
+        });
+      }
     });
 
-    // 2. Products se Total Items aur Low Stock calculate karna
-    const products = await Product.find();
-    const totalProducts = products.length;
-    
-    // 🛠️ FIX & UPDATE: Low stock items ki list nikal rahe hain aur count bhi filter kar rahe hain
-    const lowStockItems = products.filter(p => p.stock_quantity <= 5);
-    const lowStockCount = lowStockItems.length;
-
-    // dailySalesMap ko Object se Array me badalna taaki Recharts graph padh sake
     const chartData = Object.keys(dailySalesMap).map(date => ({
       name: date,
       Sales: dailySalesMap[date]
     }));
 
-    // 🔥 EXACT RESPONSE LOGIC ACCORDING TO YOUR CODE + LOW STOCK ITEMS
+    const topProducts = Object.entries(productCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    const products = await Product.find();
+    const totalProducts = products.length;
+    const lowStockItems = products.filter(p => p.stock_quantity <= 5);
+    const lowStockCount = lowStockItems.length;
+
     return NextResponse.json({
       totalRevenue,
       totalOrders,
       totalProducts,
       lowStockCount,
-      lowStockItems, // 🛠️ Frontend Action Center ab is array ko render karega
-      chartData 
+      lowStockItems,
+      chartData,
+      todayBills,      // NEW
+      todayCash,       // NEW
+      todayOnline,     // NEW
+      topProducts      // NEW
     }, { status: 200 });
 
   } catch (error) {
