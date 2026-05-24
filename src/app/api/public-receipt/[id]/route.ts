@@ -2,15 +2,18 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import mongoose from 'mongoose';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+// 🛠️ FIX: Next.js expects params to be a Promise in newer versions
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
     
-    // Check if model exists or compile it safely
+    // 🛠️ FIX: Await the params object before using it
+    const resolvedParams = await params;
+    
     const Order = mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({}, { strict: false }));
     
-    // orderId unique string se fetch karenge (e.g. ORD-123456)
-    const order = await Order.findOne({ orderId: params.id });
+    // Use resolvedParams.id
+    const order = await Order.findOne({ orderId: resolvedParams.id });
     
     if (!order) {
       return NextResponse.json({ error: 'Receipt not found' }, { status: 404 });

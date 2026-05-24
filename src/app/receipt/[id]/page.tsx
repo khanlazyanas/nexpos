@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Loader2, QrCode, AlertCircle } from 'lucide-react';
 
-export default function PublicReceiptPage({ params }: { params: { id: string } }) {
+// 🛠️ FIX: Type updated to Promise<{ id: string }>
+export default function PublicReceiptPage({ params }: { params: Promise<{ id: string }> }) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -11,8 +12,12 @@ export default function PublicReceiptPage({ params }: { params: { id: string } }
   useEffect(() => {
     const fetchReceipt = async () => {
       try {
-        const res = await fetch(`/api/public-receipt/${params.id}`);
+        // 🛠️ FIX: Await the params here inside useEffect
+        const resolvedParams = await params;
+        
+        const res = await fetch(`/api/public-receipt/${resolvedParams.id}`);
         const data = await res.json();
+        
         if (res.ok) {
           setOrder(data);
         } else {
@@ -24,8 +29,9 @@ export default function PublicReceiptPage({ params }: { params: { id: string } }
         setLoading(false);
       }
     };
+    
     fetchReceipt();
-  }, [params.id]);
+  }, [params]);
 
   if (loading) {
     return (
