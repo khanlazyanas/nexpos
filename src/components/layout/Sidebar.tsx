@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Package, Zap, Lock, Receipt, Users, Settings, Home,ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Zap, Lock, Receipt, Users, Settings, Home,ShieldCheck,Wallet } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -41,8 +41,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { name: 'Order History', href: '/orders', icon: Receipt, isProtected: false },
     { name: 'Customers & Khata', href: '/customers', icon: Users, isProtected: false },
     { name: 'Store Settings', href: '/settings', icon: Settings, isProtected: true },
+    { name: 'Shift Manager', href: '/shift', icon: Wallet },
+    { name: 'Staff Management', href: '/staff', icon: ShieldCheck, isProtected: true },
     { name: 'NexPOS Home', href: '/', icon: Home, isProtected: false },
-    { name: 'Staff Management', href: '/staff', icon: ShieldCheck, isProtected: true }
   ];
 
   return (
