@@ -67,6 +67,48 @@ export async function GET() {
     const lowStockItems = products.filter(p => p.stock_quantity <= 5);
     const lowStockCount = lowStockItems.length;
 
+    // 🤖 AI SMART INSIGHTS ENGINE (Dynamically generated based on live data)
+    const aiInsights = [];
+
+    // 1. Inventory Insight
+    if (lowStockCount > 0) {
+      aiInsights.push({
+        type: 'warning',
+        title: 'Critical Restock Alert',
+        text: `You have ${lowStockCount} items running low. Restock '${lowStockItems[0]?.name || 'items'}' immediately to avoid lost sales.`
+      });
+    } else {
+      aiInsights.push({
+        type: 'success',
+        title: 'Inventory Optimized',
+        text: 'Stock levels are healthy across all categories. Capital is well-distributed.'
+      });
+    }
+
+    // 2. Sales Trend Insight
+    if (topProducts.length > 0) {
+      aiInsights.push({
+        type: 'insight',
+        title: 'Sales Opportunity',
+        text: `Trend detected: '${topProducts[0].name}' is your top seller. Consider creating a bundle offer around it to boost AOV.`
+      });
+    }
+
+    // 3. Financial Insight
+    if (todayOnline > todayCash) {
+       aiInsights.push({
+         type: 'info',
+         title: 'Digital Payments Surging',
+         text: `Online transactions (₹${todayOnline}) exceeded Cash (₹${todayCash}) today. Ensure your UPI QR stands are clearly visible.`
+       });
+    } else if (todayCash > 0 && todayCash >= todayOnline) {
+       aiInsights.push({
+         type: 'info',
+         title: 'Cash Heavy Operations',
+         text: `High cash collection today (₹${todayCash}). Reminder to reconcile the cash drawer in the Shift Manager before closing.`
+       });
+    }
+
     return NextResponse.json({
       totalRevenue,
       totalOrders,
@@ -74,10 +116,11 @@ export async function GET() {
       lowStockCount,
       lowStockItems,
       chartData,
-      todayBills,      // NEW
-      todayCash,       // NEW
-      todayOnline,     // NEW
-      topProducts      // NEW
+      todayBills,
+      todayCash,
+      todayOnline,
+      topProducts,
+      aiInsights // 🚀 Added AI Insights to payload
     }, { status: 200 });
 
   } catch (error) {

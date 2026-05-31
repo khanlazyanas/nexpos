@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import { IndianRupee, ShoppingBag, Package, AlertTriangle, Activity, RefreshCw, BarChart3, Loader2, Plus, Receipt, Banknote, CreditCard } from 'lucide-react';
+import { IndianRupee, ShoppingBag, Package, AlertTriangle, Activity, RefreshCw, BarChart3, Loader2, Plus, Receipt, Banknote, CreditCard, Bot, Sparkles, Info, CheckCircle2, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
@@ -16,7 +16,8 @@ export default function DashboardPage() {
     todayBills: 0,
     todayCash: 0,
     todayOnline: 0,
-    topProducts: []
+    topProducts: [],
+    aiInsights: [] // 🚀 Initialize AI state
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -146,6 +147,55 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* 🤖 NEW: AI SMART INSIGHTS ENGINE */}
+          {stats.aiInsights && stats.aiInsights.length > 0 && (
+            <div className="bg-gray-900 backdrop-blur-3xl rounded-[2.5rem] p-6 sm:p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] relative overflow-hidden text-white border border-gray-800 animate-in slide-in-from-bottom-8 duration-500">
+              {/* Background Glow */}
+              <div className="absolute top-[-50%] right-[-10%] w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+              <div className="absolute bottom-[-50%] left-[-10%] w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+              <div className="flex items-center gap-3 mb-6 relative z-10">
+                <div className="p-3 bg-white/10 rounded-[1.2rem] text-emerald-400 border border-white/10 shadow-inner backdrop-blur-md">
+                  <Bot size={24} strokeWidth={2} className="animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-black tracking-tight text-xl text-white flex items-center gap-2">
+                    NexPOS AI Insights <Sparkles size={16} className="text-yellow-400" />
+                  </h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Live Data Analysis</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                {stats.aiInsights.map((insight: any, idx: number) => {
+                  let badgeColors = 'bg-gray-800/50 border-gray-700 text-gray-300';
+                  let Icon = Info;
+
+                  if (insight.type === 'warning') {
+                    badgeColors = 'bg-rose-950/40 border-rose-900 text-rose-300';
+                    Icon = AlertTriangle;
+                  } else if (insight.type === 'success') {
+                    badgeColors = 'bg-emerald-950/40 border-emerald-900 text-emerald-300';
+                    Icon = CheckCircle2;
+                  } else if (insight.type === 'insight') {
+                    badgeColors = 'bg-blue-950/40 border-blue-900 text-blue-300';
+                    Icon = Zap;
+                  }
+
+                  return (
+                    <div key={idx} className={`p-5 rounded-3xl border backdrop-blur-sm ${badgeColors} flex flex-col gap-3 transition-transform hover:-translate-y-1`}>
+                      <div className="flex items-center gap-2">
+                        <Icon size={16} className="opacity-80" />
+                        <h4 className="text-xs font-black uppercase tracking-widest">{insight.title}</h4>
+                      </div>
+                      <p className="text-sm font-semibold leading-relaxed opacity-90">{insight.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 2. Floating Stat Cards (Legacy Row) */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
