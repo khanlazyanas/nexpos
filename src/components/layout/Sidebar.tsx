@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Package, Zap, Lock, Receipt, Users, Settings, Home, ShieldCheck, Wallet, MapPin } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Zap, Lock, Receipt, Users, Settings, Home, ShieldCheck, Wallet, MapPin, ChevronDown, Check } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -18,6 +18,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
   // 🏢 MULTI-BRANCH LOGIC
   const [selectedBranch, setSelectedBranch] = useState('Main Branch');
+  const [isBranchMenuOpen, setIsBranchMenuOpen] = useState(false); // NAYA STATE CUSTOM DROPDOWN KE LIYE
+
+  const branches = ['Main Branch', 'Lucknow Hazratganj', 'Lucknow Gomti Nagar'];
 
   useEffect(() => {
     // Page load hote hi browser ki cookie se active branch padho
@@ -25,11 +28,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     if (match) setSelectedBranch(match[2]);
   }, []);
 
-  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newBranch = e.target.value;
+  const handleBranchSelect = (branch: string) => {
     // Cookie save karo jo 1 saal tak rahegi
-    document.cookie = `selectedBranch=${newBranch}; path=/; max-age=31536000`;
-    setSelectedBranch(newBranch);
+    document.cookie = `selectedBranch=${branch}; path=/; max-age=31536000`;
+    setSelectedBranch(branch);
+    setIsBranchMenuOpen(false);
     // Data naye branch ka laane ke liye page refresh karo
     window.location.reload();
   };
@@ -71,8 +74,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       
       <div className="relative z-10 flex flex-col h-full">
         {/* 🚀 Brand Logo & Branch Switcher Area */}
-        <div className="pt-8 pb-4 px-8 border-b border-white/40 shrink-0">
-          <div className="flex items-center gap-4 mb-5">
+        <div className="pt-8 pb-5 px-8 border-b border-white/40 shrink-0">
+          <div className="flex items-center gap-4 mb-6">
             <div className="relative group">
               <div className="absolute inset-0 bg-emerald-400/40 rounded-[1.2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-md"></div>
               <div className="relative bg-gradient-to-br from-emerald-400 via-teal-500 to-teal-700 p-3 rounded-[1.2rem] shadow-xl shadow-emerald-500/20 border border-white/20 group-hover:-rotate-3 transition-all duration-500">
@@ -92,20 +95,55 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             </div>
           </div>
 
-          {/* 🏪 Enterprise Branch Switcher Dropdown */}
-          <div className="relative group">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none">
-              <MapPin size={14} strokeWidth={2.5} />
-            </div>
-            <select
-              value={selectedBranch}
-              onChange={handleBranchChange}
-              className="w-full bg-white/60 backdrop-blur-md border border-white hover:border-emerald-100 rounded-xl py-2.5 pl-9 pr-3 text-xs font-black text-gray-800 outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-sm appearance-none cursor-pointer transition-all uppercase tracking-wide"
+          {/* 🏪 NAYA: Premium Custom Branch Switcher */}
+          <div className="relative z-50">
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Active Location</p>
+            
+            <button
+              onClick={() => setIsBranchMenuOpen(!isBranchMenuOpen)}
+              className={`w-full bg-white/70 backdrop-blur-md border hover:border-emerald-200 rounded-2xl py-3 px-4 flex items-center justify-between shadow-sm transition-all active:scale-[0.98] group ${isBranchMenuOpen ? 'border-emerald-300 ring-4 ring-emerald-500/10' : 'border-white'}`}
             >
-              <option value="Main Branch">Main Branch</option>
-              <option value="Lucknow Hazratganj">Lucknow Hazratganj</option>
-              <option value="Lucknow Gomti Nagar">Lucknow Gomti Nagar</option>
-            </select>
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-100/80 p-1.5 rounded-lg text-emerald-600 shadow-inner">
+                  <MapPin size={16} strokeWidth={2.5} />
+                </div>
+                <span className="text-xs font-black text-gray-800 tracking-wide truncate max-w-[120px] text-left">
+                  {selectedBranch}
+                </span>
+              </div>
+              <ChevronDown 
+                size={16} 
+                strokeWidth={3} 
+                className={`text-gray-400 transition-transform duration-300 ${isBranchMenuOpen ? 'rotate-180 text-emerald-500' : 'group-hover:text-emerald-500'}`} 
+              />
+            </button>
+
+            {/* Dropdown Menu & Overlay */}
+            {isBranchMenuOpen && (
+              <>
+                {/* Invisible overlay outside click catch karne ke liye */}
+                <div className="fixed inset-0 z-40" onClick={() => setIsBranchMenuOpen(false)}></div>
+                
+                <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white/95 backdrop-blur-2xl border border-white shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200 p-1.5">
+                  {branches.map((branch) => (
+                    <button
+                      key={branch}
+                      onClick={() => handleBranchSelect(branch)}
+                      className={`w-full text-left px-3 py-3 text-xs font-bold transition-all rounded-xl flex items-center justify-between group ${
+                        selectedBranch === branch 
+                          ? 'bg-emerald-50 text-emerald-700' 
+                          : 'text-gray-600 hover:bg-gray-50/80 hover:text-gray-900'
+                      }`}
+                    >
+                      <span className="truncate">{branch}</span>
+                      {selectedBranch === branch && (
+                        <Check size={14} strokeWidth={4} className="text-emerald-500" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
