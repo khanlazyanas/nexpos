@@ -1,75 +1,55 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import connectToDatabase from '@/lib/db';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
-import Customer from '@/models/Customer'; // 🛠️ NAYA: Customer Model Import
+import Customer from '@/models/Customer';
 
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
     
-    // Frontend se saara Advanced data lena
+    // 🏢 MULTI-BRANCH: Inject branch into new order
+    const cookieStore = await cookies();
+    const activeBranch = cookieStore.get('selectedBranch')?.value || 'Main Branch';
+    
     const body = await req.json();
     const { 
-      items, 
-      totalAmount,
-      orderId,
-      customerName,
-      customerMobile,
-      subTotal,
-      discount,
-      tax,
-      paymentMethod
+      items, totalAmount, orderId, customerName, customerMobile, subTotal, discount, tax, paymentMethod
     } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart empty hai' }, { status: 400 });
     }
 
-    // 1. Order database format me convert karna
     const orderItems = items.map((item: any) => ({
-      product: item._id,
-      name: item.name,
-      price: item.price,
-      quantity: item.cartQuantity
+      product: item._id, name: item.name, price: item.price, quantity: item.cartQuantity
     }));
 
-    // 2. Naya Advanced Order (Bill) save karna
     const newOrder = await Order.create({
       orderId,
       customerName: customerName || 'Guest',
       customerMobile: customerMobile || '',
       items: orderItems,
-      subTotal,
-      discount,
-      tax,
-      totalAmount,
-      paymentMethod: paymentMethod || 'Cash'
+      subTotal, discount, tax, totalAmount,
+      paymentMethod: paymentMethod || 'Cash',
+      branch: activeBranch // Assigning the bill to the specific store branch
     });
 
-    // 3. Products ka Stock kam karna (Loop chala kar)
     for (const item of items) {
       await Product.findByIdAndUpdate(item._id, {
-        $inc: { stock_quantity: -item.cartQuantity } // Minus karke stock hatao
+        $inc: { stock_quantity: -item.cartQuantity } 
       });
     }
 
-    // 4. 🛠️ NAYA: Customer CRM & Khata Database Update
-    // Agar mobile number diya gaya hai (matlab proper customer hai, guest nahi)
     if (customerName && customerMobile) {
       const existingCustomer = await Customer.findOne({ phone: customerMobile });
-      
       if (existingCustomer) {
-        // Purana customer hai toh uski lifetime shopping value me naya amount jod do
         existingCustomer.totalPurchases += totalAmount;
         await existingCustomer.save();
       } else {
-        // Naya customer hai toh pehli baar CRM me uska record banao
         await Customer.create({
-          name: customerName,
-          phone: customerMobile,
-          totalPurchases: totalAmount,
-          dueAmount: 0 // Default 0
+          name: customerName, phone: customerMobile, totalPurchases: totalAmount, dueAmount: 0
         });
       }
     }

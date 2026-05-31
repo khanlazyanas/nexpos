@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import connectToDatabase from '@/lib/db';
 import Product from '@/models/Product';
 
-// GET: Saare products ko database se lane ke liye
 export async function GET() {
   try {
-    await connectToDatabase(); // Pehle DB connect karo
-    const products = await Product.find({}).sort({ createdAt: -1 }); // Latest pehle
+    await connectToDatabase(); 
     
-    // Express me 'res.status(200).json()' hota tha, Next.js me 'NextResponse.json()' use hota hai
+    // 🏢 MULTI-BRANCH: Extract active branch
+    const cookieStore = await cookies();
+    const activeBranch = cookieStore.get('selectedBranch')?.value || 'Main Branch';
+    
+    // Fetch products ONLY for this branch
+    const products = await Product.find({ branch: activeBranch }).sort({ createdAt: -1 }); 
+    
     return NextResponse.json(products, { status: 200 });
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -16,16 +21,17 @@ export async function GET() {
   }
 }
 
-// POST: Naya product database me save karne ke liye
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
     
-    // Express me 'req.body' hota tha, Next.js me 'req.json()' method hota hai
+    // 🏢 MULTI-BRANCH: Inject branch into new product
+    const cookieStore = await cookies();
+    const activeBranch = cookieStore.get('selectedBranch')?.value || 'Main Branch';
+    
     const body = await req.json(); 
     const { name, barcode_sku, price, stock_quantity } = body;
 
-    // Validation
     if (!name || !barcode_sku || !price) {
       return NextResponse.json({ error: 'Name, Barcode, aur Price zaroori hain' }, { status: 400 });
     }
@@ -34,18 +40,16 @@ export async function POST(req: Request) {
       name,
       barcode_sku,
       price,
-      stock_quantity: stock_quantity || 0
+      stock_quantity: stock_quantity || 0,
+      branch: activeBranch // Assigning to correct store
     });
 
     return NextResponse.json(newProduct, { status: 201 });
   } catch (error: any) {
     console.error("Error creating product:", error);
-    
-    // Agar same barcode wala product dobara add ho
     if (error.code === 11000) {
       return NextResponse.json({ error: 'Ye barcode pehle se exist karta hai' }, { status: 400 });
     }
-    
     return NextResponse.json({ error: 'Product save nahi ho paya' }, { status: 500 });
   }
 }

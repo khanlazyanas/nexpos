@@ -1,31 +1,46 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Package, Zap, Lock, Receipt, Users, Settings, Home,ShieldCheck,Wallet } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Zap, Lock, Receipt, Users, Settings, Home, ShieldCheck, Wallet, MapPin } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const { data: session, status } = useSession();
   
-  // 🛠️ SAFE TYPE CASTING FOR VERCEL BUILD PASS
   const user = session?.user as any; 
   const isAdmin = user?.role === 'Admin';
   
   const router = useRouter();
   const pathname = usePathname();
 
+  // 🏢 MULTI-BRANCH LOGIC
+  const [selectedBranch, setSelectedBranch] = useState('Main Branch');
+
+  useEffect(() => {
+    // Page load hote hi browser ki cookie se active branch padho
+    const match = document.cookie.match(/(^| )selectedBranch=([^;]+)/);
+    if (match) setSelectedBranch(match[2]);
+  }, []);
+
+  const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBranch = e.target.value;
+    // Cookie save karo jo 1 saal tak rahegi
+    document.cookie = `selectedBranch=${newBranch}; path=/; max-age=31536000`;
+    setSelectedBranch(newBranch);
+    // Data naye branch ka laane ke liye page refresh karo
+    window.location.reload();
+  };
+
   const handleNavigation = (path: string) => {
     if (onClose) onClose(); 
     if (!isAdmin) {
       toast.error("Access Denied: Admin privileges required! 🚫", {
         style: { 
-          borderRadius: '16px', 
-          background: '#0f172a', 
-          color: '#fff', 
-          fontWeight: '900', 
-          border: '1px solid #e11d48',
+          borderRadius: '16px', background: '#0f172a', color: '#fff', 
+          fontWeight: '900', border: '1px solid #e11d48',
           boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)'
         }
       });
@@ -51,14 +66,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       
       <Toaster position="top-right" />
       
-      {/* 🌌 Background ambient glows for depth */}
       <div className="absolute top-[-5%] left-[-10%] w-48 h-48 bg-emerald-400/20 rounded-full blur-[80px] pointer-events-none"></div>
       <div className="absolute bottom-[10%] right-[-20%] w-40 h-40 bg-teal-400/20 rounded-full blur-[60px] pointer-events-none"></div>
       
       <div className="relative z-10 flex flex-col h-full">
-        {/* 🚀 Brand Logo Area */}
-        <div className="h-28 flex items-center px-8 border-b border-white/40 shrink-0">
-          <div className="flex items-center gap-4">
+        {/* 🚀 Brand Logo & Branch Switcher Area */}
+        <div className="pt-8 pb-4 px-8 border-b border-white/40 shrink-0">
+          <div className="flex items-center gap-4 mb-5">
             <div className="relative group">
               <div className="absolute inset-0 bg-emerald-400/40 rounded-[1.2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 blur-md"></div>
               <div className="relative bg-gradient-to-br from-emerald-400 via-teal-500 to-teal-700 p-3 rounded-[1.2rem] shadow-xl shadow-emerald-500/20 border border-white/20 group-hover:-rotate-3 transition-all duration-500">
@@ -76,6 +90,22 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* 🏪 Enterprise Branch Switcher Dropdown */}
+          <div className="relative group">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none">
+              <MapPin size={14} strokeWidth={2.5} />
+            </div>
+            <select
+              value={selectedBranch}
+              onChange={handleBranchChange}
+              className="w-full bg-white/60 backdrop-blur-md border border-white hover:border-emerald-100 rounded-xl py-2.5 pl-9 pr-3 text-xs font-black text-gray-800 outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-sm appearance-none cursor-pointer transition-all uppercase tracking-wide"
+            >
+              <option value="Main Branch">Main Branch</option>
+              <option value="Lucknow Hazratganj">Lucknow Hazratganj</option>
+              <option value="Lucknow Gomti Nagar">Lucknow Gomti Nagar</option>
+            </select>
           </div>
         </div>
 
