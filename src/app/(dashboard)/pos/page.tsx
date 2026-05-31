@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { IProduct } from '@/types';
 import { useCartStore } from '@/store/useCartStore';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, ScanBarcode, Receipt, Sparkles, Zap, Printer, CheckCircle2, X, User, Phone, Percent, Banknote, QrCode, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, ScanBarcode, Receipt, Sparkles, Zap, Printer, CheckCircle2, X, User, Phone, Percent, Banknote, QrCode, AlertTriangle, ShieldCheck, Gift } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Razorpay SDK Load
@@ -30,6 +30,10 @@ export default function POSPage() {
   const [applyTax, setApplyTax] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Cash');
 
+  // 🎁 NAYA: Loyalty Wallet States
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [usePoints, setUsePoints] = useState<boolean>(false);
+
   // Receipt States
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
@@ -39,6 +43,31 @@ export default function POSPage() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // 🤖 NAYA: Auto-fetch Customer Points on 10 digit entry
+  useEffect(() => {
+    const checkCustomer = async () => {
+      if (customerMobile.length === 10) {
+        try {
+          const res = await fetch(`/api/customer/lookup?phone=${customerMobile}`);
+          const data = await res.json();
+          if (res.ok && data.success && data.customer) {
+            setCustomerName(data.customer.name);
+            setWalletBalance(data.customer.loyaltyPoints || 0);
+          } else {
+            setWalletBalance(0);
+            setUsePoints(false);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        setWalletBalance(0);
+        setUsePoints(false);
+      }
+    };
+    checkCustomer();
+  }, [customerMobile]);
 
   const fetchProducts = async () => {
     try {
@@ -52,22 +81,17 @@ export default function POSPage() {
     }
   };
 
-  // 🚀 UPDATED: WhatsApp Handle Function (Digital SaaS Link)
   const handleWhatsApp = () => {
     if (!receiptData?.customerMobile) {
       toast.error("Customer mobile number not found!");
       return;
     }
-
-    // Live Domain URL Link generate hoga order ID ke sath
     const receiptLink = `${window.location.origin}/receipt/${receiptData.orderId}`;
-
     const message = `*Receipt from NexPOS*\n\n` +
                     `Order ID: #${receiptData.orderId.split('-')[1]}\n` +
                     `Total Amount: ₹${receiptData.finalTotal}\n\n` +
                     `Click the link below to view your digital receipt:\n${receiptLink}\n\n` +
                     `Thank you for shopping with us!`;
-
     const whatsappUrl = `https://wa.me/91${receiptData.customerMobile}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -77,9 +101,7 @@ export default function POSPage() {
     const currentQtyInCart = cartItem ? cartItem.cartQuantity : 0;
 
     if (currentQtyInCart >= product.stock_quantity) {
-      toast.error(`Cannot add more! Only ${product.stock_quantity} in stock.`, {
-        style: { borderRadius: '12px', background: '#1e293b', color: '#fff', fontWeight: 'bold' }
-      });
+      toast.error(`Cannot add more! Only ${product.stock_quantity} in stock.`, { style: { borderRadius: '12px', background: '#1e293b', color: '#fff', fontWeight: 'bold' } });
       return;
     }
 
@@ -88,29 +110,39 @@ export default function POSPage() {
 
     if (remainingStock > 0 && remainingStock <= 5) {
       toast.custom((t) => (
-        <div className={`${t.visible ? 'animate-in slide-in-from-top-2' : 'animate-out fade-out'} max-w-sm w-full bg-white border border-rose-100 shadow-2xl shadow-rose-500/10 rounded-2xl pointer-events-auto flex overflow-hidden`}>
-          <div className="flex-1 w-0 p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 pt-0.5"><AlertTriangle className="h-6 w-6 text-rose-500 animate-pulse" /></div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-black text-gray-900 tracking-tight uppercase">Low Stock Alert</p>
-                <p className="mt-1 text-xs font-bold text-gray-500">{product.name} has only <span className="text-rose-600">{remainingStock} left</span>!</p>
-              </div>
+        <div className={`${t.visible ? 'animate-in slide-in-from-top-2' : 'animate-out fade-out'} max-w-sm w-full bg-white border border-rose-100 shadow-2xl shadow-rose-500/10 rounded-2xl flex overflow-hidden`}>
+          <div className="flex-1 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-6 w-6 text-rose-500 animate-pulse" />
+            <div>
+              <p className="text-sm font-black uppercase">Low Stock Alert</p>
+              <p className="text-xs text-gray-500">{product.name} has <span className="text-rose-600">{remainingStock} left</span>!</p>
             </div>
           </div>
-          <div className="flex border-l border-gray-100 bg-gray-50 hover:bg-rose-50 transition-colors">
-            <button onClick={() => toast.dismiss(t.id)} className="w-full p-4 flex items-center justify-center text-xs font-bold text-gray-500 hover:text-rose-600">Close</button>
-          </div>
+          <button onClick={() => toast.dismiss(t.id)} className="w-16 bg-gray-50 border-l hover:bg-rose-50 text-xs font-bold text-gray-500 hover:text-rose-600">Close</button>
         </div>
-      ), { duration: 4000, position: 'top-right' });
+      ), { duration: 4000 });
     } else if (remainingStock === 0) {
-      toast.error(`${product.name} is now Out of Stock!`, { icon: '🚨' });
+      toast.error(`${product.name} Out of Stock!`, { icon: '🚨' });
     }
   };
 
+  // 💰 NAYA: Math Logic for Points Redemption
   const subTotal = cartTotal();
   const taxAmount = applyTax ? Math.round(subTotal * 0.18) : 0; 
-  const finalTotal = Math.max(0, subTotal + taxAmount - discount);
+  let preFinalTotal = Math.max(0, subTotal + taxAmount - discount);
+  const pointsToRedeem = usePoints ? Math.min(walletBalance, preFinalTotal) : 0; // Don't use more points than bill value
+  const finalTotal = preFinalTotal - pointsToRedeem;
+
+  const handleClearAll = () => {
+    clearCart();
+    setCustomerName('');
+    setCustomerMobile('');
+    setDiscount(0);
+    setApplyTax(false);
+    setPaymentMethod('Cash');
+    setWalletBalance(0);
+    setUsePoints(false);
+  };
 
   const saveOrderToDatabase = async (orderId: string, orderDate: string, transactionId: string = 'CASH') => {
     try {
@@ -118,20 +150,25 @@ export default function POSPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart, orderId, customerName, customerMobile, subTotal, discount, tax: taxAmount, totalAmount: finalTotal, paymentMethod, transactionId
+          items: cart, orderId, customerName, customerMobile, subTotal, discount, tax: taxAmount, 
+          totalAmount: finalTotal, paymentMethod, transactionId, usedPoints: pointsToRedeem
         })
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         setReceiptData({
-          items: [...cart], subTotal, discount, taxAmount, finalTotal, date: orderDate, orderId, customerName, customerMobile, paymentMethod, transactionId
+          items: [...cart], subTotal, discount, taxAmount, finalTotal, date: orderDate, orderId, 
+          customerName, customerMobile, paymentMethod, transactionId,
+          usedPoints: pointsToRedeem, earnedPoints: data.earnedPoints || 0
         });
-        clearCart(); setCustomerName(''); setCustomerMobile(''); setDiscount(0); setApplyTax(false); setPaymentMethod('Cash'); fetchProducts(); 
+        handleClearAll();
+        fetchProducts(); 
         setShowReceipt(true);
         toast.success("Transaction Completed!", { duration: 2000, style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Checkout Failed!');
+        toast.error(data.error || 'Checkout Failed!');
       }
     } catch (error) {
       toast.error('System error during save.');
@@ -259,23 +296,42 @@ export default function POSPage() {
         {/* Ledger Header */}
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 bg-white/60 shrink-0 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight flex items-center gap-2"><Receipt size={20} className="text-emerald-500" /> Active Ledger</h2>
-          <button onClick={clearCart} className="bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all active:scale-95 border border-rose-100 hover:border-rose-500">Clear</button>
+          <button onClick={handleClearAll} className="bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all active:scale-95 border border-rose-100 hover:border-rose-500">Clear</button>
         </div>
 
         {/* Customer Identity */}
-        <div className="px-4 sm:px-6 py-4 bg-gray-50/50 border-b border-gray-100 shrink-0 flex gap-3">
+        <div className="px-4 sm:px-6 pt-4 pb-2 bg-gray-50/50 shrink-0 flex gap-3">
           <div className="flex-1 relative group">
             <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
             <input type="text" placeholder="Customer Name" value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm" />
           </div>
           <div className="flex-1 relative group">
             <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-            <input type="text" placeholder="Mobile No." value={customerMobile} onChange={(e)=>setCustomerMobile(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm" />
+            <input type="text" placeholder="Mobile No. (10-digit)" maxLength={10} value={customerMobile} onChange={(e)=>setCustomerMobile(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm" />
           </div>
         </div>
 
+        {/* 💳 NAYA: Customer Loyalty Wallet Widget */}
+        {walletBalance > 0 && (
+          <div className="mx-4 sm:mx-6 mb-2 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200 rounded-[1rem] flex items-center justify-between shadow-inner animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="bg-yellow-400 p-2 rounded-xl text-white shadow-sm"><Gift size={16} /></div>
+              <div>
+                <p className="text-[10px] font-black text-yellow-800 tracking-widest uppercase">Loyalty Wallet</p>
+                <p className="text-xs font-bold text-yellow-600">{walletBalance} Points Available</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer active:scale-95 transition-transform">
+              <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="sr-only peer" />
+              <div className="w-10 h-5 bg-yellow-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500 shadow-sm border border-yellow-300/50"></div>
+            </label>
+          </div>
+        )}
+
+        <div className="border-b border-gray-100"></div>
+
         {/* Cart Item Feed */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar bg-white/30 min-h-[200px]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar bg-white/30 min-h-[150px]">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-3">
               <div className="bg-gray-50 p-6 rounded-full border border-gray-100"><ShoppingCart size={40} strokeWidth={1.5} /></div>
@@ -330,7 +386,12 @@ export default function POSPage() {
 
           <div className="px-4 sm:px-6 pb-6 pt-2">
             <div className="flex justify-between items-end mb-4 px-2">
-              <span className="text-gray-400 font-black uppercase tracking-widest text-xs">Final Total</span>
+              <div>
+                <span className="text-gray-400 font-black uppercase tracking-widest text-xs">Final Total</span>
+                {usePoints && pointsToRedeem > 0 && (
+                  <p className="text-[10px] font-bold text-yellow-500 mt-1 uppercase tracking-widest animate-pulse">-₹{pointsToRedeem} Points Used</p>
+                )}
+              </div>
               <span className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter">₹{finalTotal.toLocaleString()}</span>
             </div>
             
@@ -348,16 +409,14 @@ export default function POSPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
           <style dangerouslySetInnerHTML={{__html: `@media print { body * { visibility: hidden; } #thermal-container, #thermal-container * { visibility: visible; } #thermal-container { position: absolute; left: 0; top: 0; width: 80mm; padding: 0; margin: 0; } .no-print { display: none !important; } }`}} />
           
-          <div className="w-full max-w-sm flex flex-col gap-4 animate-in slide-in-from-bottom-8 duration-500">
-            {/* Success Banner */}
-            <div className="no-print bg-emerald-500 text-white rounded-2xl p-4 flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 border border-emerald-400">
+          <div className="w-full max-w-sm flex flex-col gap-4 animate-in slide-in-from-bottom-8 duration-500 max-h-screen overflow-y-auto custom-scrollbar pb-4">
+            
+            <div className="no-print bg-emerald-500 text-white rounded-2xl p-4 flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 border border-emerald-400 mt-4 shrink-0">
               <CheckCircle2 size={24} className="animate-bounce" />
               <h2 className="font-black tracking-widest uppercase text-sm">Payment Verified</h2>
             </div>
 
-            {/* The Actual Receipt Paper */}
-            <div id="thermal-container" className="bg-white rounded-t-xl rounded-b-sm shadow-2xl relative overflow-hidden pb-4">
-              {/* Torn Paper Top Effect */}
+            <div id="thermal-container" className="bg-white rounded-t-xl rounded-b-sm shadow-2xl relative overflow-hidden pb-4 shrink-0">
               <div className="absolute top-0 left-0 w-full h-3 bg-[linear-gradient(-45deg,transparent_4px,#fff_4px),linear-gradient(45deg,transparent_4px,#fff_4px)] bg-[length:8px_8px] -mt-1 drop-shadow-sm"></div>
               
               <div className="p-8 pt-10 font-mono text-gray-800 text-xs">
@@ -399,6 +458,9 @@ export default function POSPage() {
                   <div className="flex justify-between text-gray-600 font-bold"><span>Subtotal</span> <span>₹{receiptData.subTotal}</span></div>
                   {receiptData.taxAmount > 0 && <div className="flex justify-between text-gray-600 font-bold"><span>GST (18%)</span> <span>+₹{receiptData.taxAmount}</span></div>}
                   {receiptData.discount > 0 && <div className="flex justify-between text-rose-500 font-bold"><span>Discount</span> <span>-₹{receiptData.discount}</span></div>}
+                  
+                  {/* 🎁 NAYA: Points Receipt UI */}
+                  {receiptData.usedPoints > 0 && <div className="flex justify-between text-yellow-600 font-bold"><span>Points Redeemed</span> <span>-₹{receiptData.usedPoints}</span></div>}
                 </div>
 
                 <div className="bg-gray-100 p-3 rounded-lg flex justify-between items-center font-black text-base mb-6 border border-gray-200">
@@ -409,27 +471,33 @@ export default function POSPage() {
                 <div className="text-center flex flex-col items-center">
                   <QrCode size={48} className="text-gray-900 mb-2 opacity-80" />
                   <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black border border-gray-300 px-2 py-0.5 rounded-md mb-3">{receiptData.paymentMethod} TXN</p>
+                  
+                  {/* 🎁 NAYA: Points Earned Message */}
+                  {receiptData.earnedPoints > 0 && (
+                     <div className="mb-3 px-3 py-1.5 border border-dashed border-gray-300 rounded-md">
+                       <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Wow! You Earned</p>
+                       <p className="text-xs font-black text-gray-900">+{receiptData.earnedPoints} Loyalty Points ✨</p>
+                     </div>
+                  )}
+                  
                   <p className="text-[9px] text-gray-400 font-bold tracking-widest uppercase">Thank you! Visit Again.</p>
                 </div>
               </div>
               
-              {/* Torn Paper Bottom Effect */}
               <div className="absolute bottom-0 left-0 w-full h-3 bg-[linear-gradient(-45deg,#fff_4px,transparent_4px),linear-gradient(45deg,#fff_4px,transparent_4px)] bg-[length:8px_8px] -mb-1 drop-shadow-sm rotate-180"></div>
             </div>
 
-            {/* 🚀 WhatsApp Integration Button */}
             <button 
               onClick={handleWhatsApp}
-              className="no-print flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-black py-4 rounded-2xl shadow-lg transition-transform active:scale-95 mb-1"
+              className="no-print shrink-0 flex items-center justify-center gap-2 w-full bg-[#25D366] text-white font-black py-4 rounded-2xl shadow-lg transition-transform active:scale-95 mb-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.003 3.238l-.58 2.16 2.255-.594c.909.525 1.854.794 2.805.795h.005c3.181 0 5.767-2.586 5.768-5.766.001-3.181-2.586-5.767-5.768-5.767z"/></svg>
               SEND ON WHATSAPP
             </button>
 
-            {/* Action Buttons */}
-            <div className="no-print flex gap-3">
+            <div className="no-print flex gap-3 shrink-0">
               <button onClick={() => setShowReceipt(false)} className="flex-1 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white rounded-2xl font-black tracking-widest uppercase text-xs transition-colors shadow-xl">New Sale</button>
-              <button onClick={() => window.print()} className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black tracking-widest uppercase text-xs flex items-center justify-center gap-2 transition-colors shadow-xl shadow-emerald-500/20 border border-emerald-400"><Printer size={16} /> Print Receipt</button>
+              <button onClick={() => window.print()} className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black tracking-widest uppercase text-xs flex items-center justify-center gap-2 transition-colors shadow-xl shadow-emerald-500/20 border border-emerald-400"><Printer size={16} /> Print</button>
             </div>
           </div>
         </div>

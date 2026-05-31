@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     
     const body = await req.json();
     const { 
-      items, totalAmount, orderId, customerName, customerMobile, subTotal, discount, tax, paymentMethod
+      items, totalAmount, orderId, customerName, customerMobile, subTotal, discount, tax, paymentMethod, usedPoints = 0
     } = body;
 
     if (!items || items.length === 0) {
@@ -26,35 +26,51 @@ export async function POST(req: Request) {
       product: item._id, name: item.name, price: item.price, quantity: item.cartQuantity
     }));
 
+    // 1. Order create karo
     const newOrder = await Order.create({
       orderId,
       customerName: customerName || 'Guest',
       customerMobile: customerMobile || '',
       items: orderItems,
-      subTotal, discount, tax, totalAmount,
+      subTotal, discount, tax, totalAmount, // totalAmount me pehle se hi usedPoints minus hokar frontend se aayenge
       paymentMethod: paymentMethod || 'Cash',
-      branch: activeBranch // Assigning the bill to the specific store branch
+      branch: activeBranch
     });
 
+    // 2. Stock minus karo
     for (const item of items) {
       await Product.findByIdAndUpdate(item._id, {
         $inc: { stock_quantity: -item.cartQuantity } 
       });
     }
 
+    // 3. 🎁 NAYA: Loyalty Points & CRM Calculation
+    let earnedPoints = 0;
     if (customerName && customerMobile) {
+      // Har ₹100 ki shopping par 1 Point
+      earnedPoints = Math.floor(totalAmount / 100); 
+
       const existingCustomer = await Customer.findOne({ phone: customerMobile });
+      
       if (existingCustomer) {
         existingCustomer.totalPurchases += totalAmount;
+        // Purane points me se used minus karo, aur naye earned jod do
+        const currentPoints = existingCustomer.loyaltyPoints || 0;
+        existingCustomer.loyaltyPoints = Math.max(0, currentPoints - usedPoints) + earnedPoints;
         await existingCustomer.save();
       } else {
         await Customer.create({
-          name: customerName, phone: customerMobile, totalPurchases: totalAmount, dueAmount: 0
+          name: customerName, 
+          phone: customerMobile, 
+          totalPurchases: totalAmount, 
+          dueAmount: 0,
+          loyaltyPoints: earnedPoints // Naye customer ko pehli shopping ke points mil gaye
         });
       }
     }
 
-    return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
+    // Response me usedPoints aur earnedPoints bhi bhej do taaki receipt me dikhe
+    return NextResponse.json({ success: true, order: newOrder, usedPoints, earnedPoints }, { status: 201 });
 
   } catch (error) {
     console.error("Checkout Error:", error);
