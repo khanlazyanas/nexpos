@@ -19,12 +19,12 @@ export async function POST(req: Request) {
     } = body;
 
     if (!items || items.length === 0) {
-      return NextResponse.json({ error: 'Cart empty hai' }, { status: 400 });
+      return NextResponse.json({ error: 'Cart is empty!' }, { status: 400 });
     }
 
     // 📓 KHATA SECURITY CHECK: Udhaar bina 10 digit number ke nahi diya ja sakta
     if (paymentMethod === 'Khata' && (!customerMobile || customerMobile.length < 10)) {
-      return NextResponse.json({ error: 'Khata ke liye mobile number zaroori hai!' }, { status: 400 });
+      return NextResponse.json({ error: 'Mobile number is mandatory for Khata entry!' }, { status: 400 });
     }
 
     const orderItems = items.map((item: any) => ({
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       customerName: customerName || 'Guest',
       customerMobile: customerMobile || '',
       items: orderItems,
-      subTotal, discount, tax, totalAmount, // totalAmount me pehle se hi usedPoints minus hokar frontend se aayenge
+      subTotal, discount, tax, totalAmount, 
       paymentMethod: paymentMethod || 'Cash',
       branch: activeBranch
     });
@@ -49,10 +49,10 @@ export async function POST(req: Request) {
       });
     }
 
-    // 3. 🎁 NAYA: Loyalty Points & 📓 CRM KHATA Calculation
+    // 3. 🎁 Loyalty Points & 📓 CRM KHATA Calculation
     let earnedPoints = 0;
     if (customerName && customerMobile) {
-      // Har ₹100 ki shopping par 1 Point (Khata walo ko bhi milega)
+      // Har ₹100 ki shopping par 1 Point 
       earnedPoints = Math.floor(totalAmount / 100); 
 
       const existingCustomer = await Customer.findOne({ phone: customerMobile });
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
           name: customerName, 
           phone: customerMobile, 
           totalPurchases: totalAmount, 
-          dueAmount: paymentMethod === 'Khata' ? totalAmount : 0, // Pehla bill hi udhaar hai toh yahan aayega
+          dueAmount: paymentMethod === 'Khata' ? totalAmount : 0, 
           loyaltyPoints: earnedPoints 
         });
       }
@@ -85,8 +85,9 @@ export async function POST(req: Request) {
     // Response me usedPoints aur earnedPoints bhi bhej do taaki receipt me dikhe
     return NextResponse.json({ success: true, order: newOrder, usedPoints, earnedPoints }, { status: 201 });
 
-  } catch (error) {
-    console.error("Checkout Error:", error);
-    return NextResponse.json({ error: 'Checkout fail ho gaya' }, { status: 500 });
+  } catch (error: any) {
+    console.error("Checkout Error Details:", error);
+    // 🛑 FIX: Professional English Error Message (Agar mongoose fail hua toh uska exact message bhejenge)
+    return NextResponse.json({ error: error.message || 'Transaction failed due to a server error.' }, { status: 500 });
   }
 }

@@ -22,7 +22,8 @@ const OrderSchema = new mongoose.Schema({
   tax: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
   
-  paymentMethod: { type: String, enum: ['Cash', 'Card', 'UPI'], default: 'Cash' },
+  // 📓 FIX: 'Khata' ko enum me add kar diya taaki DB isko reject na kare
+  paymentMethod: { type: String, enum: ['Cash', 'Card', 'UPI', 'Khata'], default: 'Cash' },
   status: { type: String, enum: ['Completed', 'Refunded'], default: 'Completed' },
   
   // 🏢 NAYA FIELD: Multi-Branch Store Tracking
