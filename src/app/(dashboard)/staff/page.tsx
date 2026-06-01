@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react'; // 🔐 NAYA: Auth session hook
-import { Users, Plus, Loader2, ShieldCheck, Mail, Lock, UserCircle, Zap, X, Trash2, ShieldAlert, Trophy, BarChart3, Presentation } from 'lucide-react';
+import { useSession } from 'next-auth/react'; 
+import { Users, Plus, Loader2, ShieldCheck, Mail, Lock, UserCircle, Zap, X, Trash2, ShieldAlert, Trophy, BarChart3 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function StaffPage() {
-  const { data: session, status } = useSession(); // 🔐 Session fetch
+  const { data: session, status } = useSession(); 
   const [staff, setStaff] = useState<any[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]); // 📊 NAYA: Leaderboard state
+  const [leaderboard, setLeaderboard] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,7 +21,7 @@ export default function StaffPage() {
       if (res.ok) {
         const data = await res.json();
         setStaff(data.staff || []);
-        setLeaderboard(data.leaderboard || []); // Leaderboard array setting
+        setLeaderboard(data.leaderboard || []); 
       }
     } catch (error) {
       toast.error("Failed to load staff members");
@@ -88,9 +88,10 @@ export default function StaffPage() {
     if (!confirm(`Are you sure you want to revoke system access for ${name}? This action cannot be undone.`)) return;
 
     try {
+      // 🛠️ FIXED LINE 93: '尊keys' replaced with 'headers'
       const res = await fetch(`/api/staff?id=${id}`, {
         method: 'DELETE',
-        尊keys: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' }
       });
       
       if (res.ok) {
@@ -139,7 +140,7 @@ export default function StaffPage() {
         </button>
       </div>
 
-      {/* 📊 NAYA: Cashier Performance Leaderboard Section */}
+      {/* 📊 Cashier Performance Leaderboard Section */}
       {!loading && leaderboard.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-6 md:p-8 border border-slate-800 shadow-2xl relative overflow-hidden text-white">
           <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none"></div>
@@ -184,14 +185,7 @@ export default function StaffPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="py-24 text-center">
-                    <Loader2 className="animate-spin mx-auto text-emerald-500 mb-3" size={40} />
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Fetching Team Data...</p>
-                  </td>
-                </tr>
-              ) : staff.length === 0 ? (
+              {staff.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-24 text-center text-gray-400">
                     <Users size={48} className="mx-auto mb-3 opacity-20" />
