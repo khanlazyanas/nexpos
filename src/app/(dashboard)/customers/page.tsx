@@ -1,13 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Users, Loader2, IndianRupee, Phone, UserCheck, WalletCards } from 'lucide-react';
+import { useSession } from 'next-auth/react'; // 🔐 NAYA: Auth Hook
+import { Search, Users, Loader2, IndianRupee, Phone, UserCheck, WalletCards, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function CustomersPage() {
+  const { data: session, status } = useSession(); // 🔐 Session nikalna
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // 📓 Khata Settlement States
+  const [settleAmounts, setSettleAmounts] = useState<{ [key: string]: string }>({});
+  const [isSettling, setIsSettling] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -25,8 +31,70 @@ export default function CustomersPage() {
         setLoading(false);
       }
     };
-    fetchCustomers();
-  }, []);
+    // Sirf tabhi fetch karo jab user authenticated ho
+    if (status === 'authenticated') {
+      fetchCustomers();
+    }
+  }, [status]);
+
+  // 🔐 ADMIN SECURITY CHECK
+  if (status === 'loading') {
+    return <div className="h-[80vh] flex justify-center items-center"><Loader2 size={48} className="animate-spin text-emerald-500" /></div>;
+  }
+
+  // Yahan hum check kar rahe hain ki role Admin hai ya nahi (email check as fallback security)
+  const isAdmin = session?.user?.role === 'Admin' || session?.user?.email === 'admin@gmail.com';
+
+  if (!isAdmin) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500 relative z-10">
+        <ShieldAlert size={80} className="text-rose-500 mb-6 animate-pulse drop-shadow-[0_10px_20px_rgba(244,63,94,0.3)]" />
+        <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tighter">Access Denied</h1>
+        <p className="text-gray-500 font-bold text-sm bg-white/60 px-6 py-3 rounded-2xl border border-gray-100 shadow-sm backdrop-blur-md">
+          Only Administrators can view and manage the Khata CRM.
+        </p>
+      </div>
+    );
+  }
+
+  // 📓 Khata Settle Function
+  const handleClearDue = async (customerId: string, currentDue: number) => {
+    const amount = Number(settleAmounts[customerId]);
+    
+    if (!amount || amount <= 0) {
+      toast.error("Enter a valid amount!", { style: { background: '#333', color: '#fff', borderRadius: '12px' }});
+      return;
+    }
+    if (amount > currentDue) {
+      toast.error(`You cannot settle more than the due (₹${currentDue})`, { style: { background: '#9f1239', color: '#fff', borderRadius: '12px' }});
+      return;
+    }
+
+    setIsSettling(customerId);
+
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, amountToClear: amount })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success(`₹${amount} cleared from Khata!`, { style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
+        setSettleAmounts({ ...settleAmounts, [customerId]: '' }); // Input clear karo
+        // Real-time table update
+        setCustomers(customers.map(c => c._id === customerId ? data.customer : c));
+      } else {
+        toast.error(data.error || "Failed to settle amount");
+      }
+    } catch (error) {
+      toast.error("System error during settlement.");
+    } finally {
+      setIsSettling(null);
+    }
+  };
 
   const filteredCustomers = customers.filter(c => {
     const searchLower = searchQuery.toLowerCase();
@@ -47,11 +115,11 @@ export default function CustomersPage() {
       {/* 1. Ultra-Premium Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/40 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-b from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter">
-            Customers CRM
+          <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-b from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter flex items-center gap-3">
+            Customers CRM <span className="bg-emerald-100 text-emerald-600 text-sm px-3 py-1 rounded-xl border border-emerald-200 shadow-inner flex items-center gap-1"><ShieldAlert size={14}/> Admin Only</span>
           </h1>
           <p className="text-gray-500 font-bold flex items-center gap-2 mt-2 text-sm md:text-base">
-            Manage regular clients and track Khata (due amounts) <WalletCards size={18} className="text-emerald-500" />
+            Manage regular clients and secure Khata settlements <WalletCards size={18} className="text-emerald-500" />
           </p>
         </div>
 
@@ -72,25 +140,26 @@ export default function CustomersPage() {
       {/* 2. Main Table Container */}
       <div className="bg-white/60 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100/50">
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest">Customer Details</th>
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-center">Lifetime Value</th>
-                <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-right">Khata Status</th>
+                <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-right">Khata Due</th>
+                <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-center">Admin Settlement</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={3} className="py-24 text-center">
+                  <td colSpan={4} className="py-24 text-center">
                     <Loader2 className="animate-spin mx-auto text-emerald-500 mb-3" size={40} />
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Syncing CRM Database...</p>
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Syncing Secure Database...</p>
                   </td>
                 </tr>
               ) : filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-24 text-center text-gray-400">
+                  <td colSpan={4} className="py-24 text-center text-gray-400">
                     <Users size={48} className="mx-auto mb-3 opacity-20" />
                     <p className="font-bold text-sm">No customers found. Process orders to build your CRM!</p>
                   </td>
@@ -138,6 +207,32 @@ export default function CustomersPage() {
                         <span className="inline-flex items-center justify-end gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-600 font-black text-[10px] uppercase tracking-widest rounded-lg shadow-sm">
                           Cleared ✨
                         </span>
+                      )}
+                    </td>
+
+                    {/* 📓 NAYA: Settle Khata Button (Only visible if Due > 0) */}
+                    <td className="px-8 py-5">
+                      {customer.dueAmount > 0 ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <input 
+                            type="number" 
+                            min="1" 
+                            max={customer.dueAmount}
+                            placeholder="₹ Amount"
+                            value={settleAmounts[customer._id] || ''}
+                            onChange={(e) => setSettleAmounts({ ...settleAmounts, [customer._id]: e.target.value })}
+                            className="w-24 bg-white/80 border border-gray-200 rounded-xl py-2 px-3 text-xs font-bold outline-none focus:border-indigo-400 text-gray-800 shadow-sm text-center placeholder:text-gray-300"
+                          />
+                          <button 
+                            onClick={() => handleClearDue(customer._id, customer.dueAmount)}
+                            disabled={isSettling === customer._id}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-black tracking-widest uppercase transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            {isSettling === customer._id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Settle
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest">No Actions</div>
                       )}
                     </td>
 

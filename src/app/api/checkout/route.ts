@@ -87,7 +87,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("Checkout Error Details:", error);
-    // 🛑 FIX: Professional English Error Message (Agar mongoose fail hua toh uska exact message bhejenge)
     return NextResponse.json({ error: error.message || 'Transaction failed due to a server error.' }, { status: 500 });
   }
 }
