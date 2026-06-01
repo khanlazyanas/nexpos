@@ -1,17 +1,37 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User'; 
+import Shift from '@/models/Shift'; // 📊 Leaderboard analytics ke liye include kiya
 import bcrypt from 'bcryptjs';
 
-// GET: Saare Staff ki list lane ke liye
+export const dynamic = 'force-dynamic';
+
+// GET: Saare Staff ki list + Live Performance Leaderboard lane ke liye
 export async function GET() {
   try {
     await connectToDatabase();
+    
+    // 1. Saare cashiers ki profile list nikaalo
     const staffMembers = await User.find({ role: 'Cashier' }).select('-password').sort({ createdAt: -1 });
-    return NextResponse.json(staffMembers, { status: 200 });
+
+    // 2. 📊 AGGREGATION LOGIC: Shift collection se live performance leaderboard calculate karo
+    const leaderboardData = await Shift.aggregate([
+      { $match: { status: 'Closed' } }, // Sirf closed shifts ka sales uthao
+      {
+        $group: {
+          _id: "$cashierName",
+          totalSalesAmount: { $sum: { $subtract: ["$expectedCash", "$openingCash"] } }, // Sales = Expected - Opening Base
+          shiftsCount: { $sum: 1 }
+        }
+      },
+      { $sort: { totalSalesAmount: -1 } } // Jiski sales zyada, wo top par 🏆
+    ]);
+
+    // Dono data ek sath single object me bhej rahe hain
+    return NextResponse.json({ staff: staffMembers, leaderboard: leaderboardData }, { status: 200 });
   } catch (error) {
     console.error("Fetch Staff Error:", error);
-    return NextResponse.json({ error: 'Failed to fetch staff' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch staff analytics' }, { status: 500 });
   }
 }
 
@@ -32,7 +52,7 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newStaff = await User.create({
+    await User.create({
       name,
       email,
       password: hashedPassword,
@@ -46,7 +66,7 @@ export async function POST(req: Request) {
   }
 }
 
-// 🛠️ NAYA: DELETE Cashier ka access hatane ke liye
+// DELETE: Cashier ka access hatane ke liye
 export async function DELETE(req: Request) {
   try {
     await connectToDatabase();

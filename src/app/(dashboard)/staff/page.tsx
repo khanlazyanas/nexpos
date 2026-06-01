@@ -1,23 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Plus, Loader2, ShieldCheck, Mail, Lock, UserCircle, Zap, X, Trash2 } from 'lucide-react';
+import { useSession } from 'next-auth/react'; // 🔐 NAYA: Auth session hook
+import { Users, Plus, Loader2, ShieldCheck, Mail, Lock, UserCircle, Zap, X, Trash2, ShieldAlert, Trophy, BarChart3, Presentation } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function StaffPage() {
+  const { data: session, status } = useSession(); // 🔐 Session fetch
   const [staff, setStaff] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]); // 📊 NAYA: Leaderboard state
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   
   const [form, setForm] = useState({ name: '', email: '', password: '' });
 
-  const fetchStaff = async () => {
+  const fetchStaffData = async () => {
     try {
       const res = await fetch('/api/staff');
       if (res.ok) {
         const data = await res.json();
-        setStaff(data);
+        setStaff(data.staff || []);
+        setLeaderboard(data.leaderboard || []); // Leaderboard array setting
       }
     } catch (error) {
       toast.error("Failed to load staff members");
@@ -27,8 +31,30 @@ export default function StaffPage() {
   };
 
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    if (status === 'authenticated') {
+      fetchStaffData();
+    }
+  }, [status]);
+
+  // 🔐 SECURITY & VERCEL BUILD FIX
+  if (status === 'loading') {
+    return <div className="h-[80vh] flex justify-center items-center"><Loader2 size={48} className="animate-spin text-emerald-500" /></div>;
+  }
+
+  const user = session?.user as any; 
+  const isAdmin = user?.role === 'Admin' || user?.email === 'admin@gmail.com';
+
+  if (!isAdmin) {
+    return (
+      <div className="h-[80vh] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500 relative z-10">
+        <ShieldAlert size={80} className="text-rose-500 mb-6 animate-pulse drop-shadow-[0_10px_20px_rgba(244,63,94,0.3)]" />
+        <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tighter">Access Denied</h1>
+        <p className="text-gray-500 font-bold text-sm bg-white/60 px-6 py-3 rounded-2xl border border-gray-100 shadow-sm backdrop-blur-md">
+          Only System Administrators have authorization to access staff accounts.
+        </p>
+      </div>
+    );
+  }
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +73,7 @@ export default function StaffPage() {
         toast.success("Cashier account created successfully!", { style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
         setIsModalOpen(false);
         setForm({ name: '', email: '', password: '' });
-        fetchStaff(); 
+        fetchStaffData(); 
       } else {
         toast.error(data.error || "Failed to create account");
       }
@@ -58,18 +84,18 @@ export default function StaffPage() {
     }
   };
 
-  // 🛠️ NAYA: Delete Handle function
   const handleDeleteStaff = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to revoke system access for ${name}? This action cannot be undone.`)) return;
 
     try {
       const res = await fetch(`/api/staff?id=${id}`, {
         method: 'DELETE',
+        尊keys: { 'Content-Type': 'application/json' }
       });
       
       if (res.ok) {
         toast.success(`${name}'s access has been revoked.`, { style: { background: '#e11d48', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
-        fetchStaff(); 
+        fetchStaffData(); 
       } else {
         toast.error("Failed to remove staff member.");
       }
@@ -96,10 +122,10 @@ export default function StaffPage() {
             <span className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Access Control</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-b from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter">
-            Staff Management
+            Staff & Performance
           </h1>
           <p className="text-gray-500 font-bold flex items-center gap-2 mt-2 text-sm md:text-base">
-            Create and manage secure login access for your cashiers.
+            Create store logins and evaluate cashier sales efficiencies.
           </p>
         </div>
 
@@ -112,6 +138,38 @@ export default function StaffPage() {
            <span className="relative z-10 tracking-widest uppercase text-xs">Add Cashier</span>
         </button>
       </div>
+
+      {/* 📊 NAYA: Cashier Performance Leaderboard Section */}
+      {!loading && leaderboard.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-6 md:p-8 border border-slate-800 shadow-2xl relative overflow-hidden text-white">
+          <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+          
+          <div className="md:col-span-1 flex flex-col justify-center space-y-2 border-b md:border-b-0 md:border-r border-slate-800 pb-4 md:pb-0 md:pr-6">
+            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-yellow-400 border border-white/10 shadow-inner mb-2">
+              <Trophy size={24} />
+            </div>
+            <h3 className="text-xl font-black tracking-tight">Sales Leaderboard</h3>
+            <p className="text-xs font-medium text-slate-400 leading-relaxed">Dynamic rating generated by compiling revenue volumes from all historical closed shifts.</p>
+          </div>
+
+          <div className="md:col-span-2 space-y-4 flex flex-col justify-center pt-2 md:pt-0">
+            {leaderboard.slice(0, 3).map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between bg-white/5 border border-white/5 p-4 rounded-2xl backdrop-blur-md shadow-sm transition-transform hover:translate-x-1">
+                <div className="flex items-center gap-3">
+                  <span className={`w-6 h-6 flex items-center justify-center text-[10px] font-black rounded-full ${idx === 0 ? 'bg-yellow-500 text-slate-950' : idx === 1 ? 'bg-slate-300 text-slate-950' : 'bg-amber-600 text-white'}`}>
+                    #{idx + 1}
+                  </span>
+                  <span className="font-black text-sm text-slate-100">{item._id}</span>
+                  <span className="text-[9px] font-black uppercase text-emerald-400 bg-emerald-950/50 border border-emerald-900/50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <BarChart3 size={10}/> {item.shiftsCount} Shifts
+                  </span>
+                </div>
+                <span className="font-mono font-black text-emerald-400 text-base">₹{item.totalSalesAmount.toLocaleString('en-IN')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Staff Table */}
       <div className="bg-white/60 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
@@ -164,7 +222,6 @@ export default function StaffPage() {
                         <ShieldCheck size={14} /> Cashier
                       </span>
                     </td>
-                    {/* 🛠️ NAYA: Delete Actions Column */}
                     <td className="px-8 py-5 text-right">
                       <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <button 
@@ -184,7 +241,7 @@ export default function StaffPage() {
         </div>
       </div>
 
-      {/* 🚀 ADD STAFF MODAL */}
+      {/* ADD STAFF MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white/90 backdrop-blur-3xl w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-400 border border-white">
