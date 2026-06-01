@@ -6,7 +6,6 @@ import { useCartStore } from '@/store/useCartStore';
 import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, ScanBarcode, Receipt, Sparkles, Zap, Printer, CheckCircle2, X, User, Phone, Percent, Banknote, QrCode, AlertTriangle, ShieldCheck, Gift, BookOpen } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
-// Razorpay SDK Load
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
     const script = document.createElement('script');
@@ -30,6 +29,9 @@ export default function POSPage() {
   const [applyTax, setApplyTax] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Cash');
 
+  // ⚙️ Store Settings State (Default fallback values)
+  const [storeSettings, setStoreSettings] = useState({ storeName: 'NexPOS', gstPercentage: 0, storeAddress: '' });
+
   // Loyalty Wallet States
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [usePoints, setUsePoints] = useState<boolean>(false);
@@ -41,10 +43,47 @@ export default function POSPage() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCartStore();
 
   useEffect(() => {
-    fetchProducts();
+    fetchProductsAndSettings();
   }, []);
 
-  // Auto-fetch Customer Points on 10 digit entry
+  // ⚙️ Fetch settings along with products safely
+  const fetchProductsAndSettings = async () => {
+    try {
+      const [prodRes, setRes] = await Promise.all([
+        fetch('/api/products').catch(() => null),
+        fetch('/api/settings').catch(() => null)
+      ]);
+      
+      if (prodRes && prodRes.ok) {
+        const prodData = await prodRes.json();
+        setProducts(prodData);
+      }
+
+      if (setRes && setRes.ok) {
+        const setData = await setRes.json();
+        // Check if data exists and is an object, not array
+        if (setData && !Array.isArray(setData) && setData.storeName) {
+          setStoreSettings({
+            storeName: setData.storeName,
+            gstPercentage: setData.gstPercentage || 0,
+            storeAddress: setData.storeAddress || ''
+          });
+        } else if (Array.isArray(setData) && setData.length > 0) {
+          // Fallback if settings returned as array
+          setStoreSettings({
+             storeName: setData[0].storeName || 'NexPOS',
+             gstPercentage: setData[0].gstPercentage || 0,
+             storeAddress: setData[0].storeAddress || ''
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Fetch Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const checkCustomer = async () => {
       if (customerMobile.length === 10) {
@@ -69,25 +108,13 @@ export default function POSPage() {
     checkCustomer();
   }, [customerMobile]);
 
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/products');
-      const data = await response.json();
-      setProducts(data);
-    } catch (error) {
-      console.error("Products Fetch Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleWhatsApp = () => {
     if (!receiptData?.customerMobile) {
       toast.error("Customer mobile number not found!");
       return;
     }
     const receiptLink = `${window.location.origin}/receipt/${receiptData.orderId}`;
-    const message = `*Receipt from NexPOS*\n\n` +
+    const message = `*Receipt from ${storeSettings.storeName}*\n\n` +
                     `Order ID: #${receiptData.orderId.split('-')[1]}\n` +
                     `Total Amount: ₹${receiptData.finalTotal}\n` +
                     `${receiptData.paymentMethod === 'Khata' ? 'Status: UNPAID (Added to Khata)\n\n' : '\n'}` +
@@ -127,8 +154,11 @@ export default function POSPage() {
     }
   };
 
+  // ⚙️ DYNAMIC MATH LOGIC
   const subTotal = cartTotal();
-  const taxAmount = applyTax ? Math.round(subTotal * 0.18) : 0; 
+  // Safe calculation to ensure no NaN errors if gstPercentage is missing
+  const activeTaxRate = storeSettings.gstPercentage || 0;
+  const taxAmount = applyTax ? Math.round(subTotal * (activeTaxRate / 100)) : 0; 
   let preFinalTotal = Math.max(0, subTotal + taxAmount - discount);
   const pointsToRedeem = usePoints ? Math.min(walletBalance, preFinalTotal) : 0; 
   const finalTotal = preFinalTotal - pointsToRedeem;
@@ -164,9 +194,8 @@ export default function POSPage() {
           usedPoints: pointsToRedeem, earnedPoints: data.earnedPoints || 0
         });
         handleClearAll();
-        fetchProducts(); 
+        fetchProductsAndSettings(); 
         setShowReceipt(true);
-        // Toast message dynamic for Khata
         toast.success(paymentMethod === 'Khata' ? 'Added to Khata Successfully!' : "Transaction Completed!", { duration: 2000, style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
       } else {
         toast.error(data.error || 'Checkout Failed!');
@@ -181,7 +210,6 @@ export default function POSPage() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     
-    // 📓 KHATA UI SECURITY: Reject Khata process if mobile number is invalid
     if (paymentMethod === 'Khata' && customerMobile.length < 10) {
       toast.error('Mobile number required to open Khata!', { icon: '⚠️', style: { borderRadius: '12px', background: '#333', color: '#fff', fontWeight: 'bold' }});
       return;
@@ -192,7 +220,6 @@ export default function POSPage() {
     const orderId = 'ORD-' + Math.floor(Math.random() * 1000000);
     const orderDate = new Date().toLocaleString('en-IN');
 
-    // Khata aur Cash ke liye direct database save (No Razorpay popup)
     if (paymentMethod === 'Cash' || paymentMethod === 'Khata') {
       await saveOrderToDatabase(orderId, orderDate, paymentMethod === 'Khata' ? 'KHATA-DUE' : 'CASH');
       return;
@@ -219,7 +246,7 @@ export default function POSPage() {
         key: 'rzp_test_8YGiWeZrGctMwH',
         amount: orderData.order.amount,
         currency: orderData.order.currency,
-        name: 'NexPOS Enterprise',
+        name: storeSettings.storeName || 'NexPOS Enterprise', 
         description: 'Secure Store Checkout',
         order_id: orderData.order.id,
         handler: async function (response: any) { await saveOrderToDatabase(orderId, orderDate, response.razorpay_payment_id); },
@@ -302,13 +329,11 @@ export default function POSPage() {
       {/* ================= RIGHT SIDE: Smart Ledger ================= */}
       <div className="w-full flex-1 lg:h-full lg:w-[420px] xl:w-[440px] flex flex-col bg-white/70 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
         
-        {/* Ledger Header */}
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 bg-white/60 shrink-0 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight flex items-center gap-2"><Receipt size={20} className="text-emerald-500" /> Active Ledger</h2>
           <button onClick={handleClearAll} className="bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all active:scale-95 border border-rose-100 hover:border-rose-500">Clear</button>
         </div>
 
-        {/* Customer Identity */}
         <div className="px-4 sm:px-6 pt-4 pb-2 bg-gray-50/50 shrink-0 flex gap-3">
           <div className="flex-1 relative group">
             <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
@@ -320,7 +345,6 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Loyalty Wallet Widget */}
         {walletBalance > 0 && (
           <div className="mx-4 sm:mx-6 mb-2 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200 rounded-[1rem] flex items-center justify-between shadow-inner animate-in fade-in zoom-in-95 duration-300">
             <div className="flex items-center gap-3">
@@ -339,7 +363,6 @@ export default function POSPage() {
 
         <div className="border-b border-gray-100"></div>
 
-        {/* Cart Item Feed */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar bg-white/30 min-h-[150px]">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-3">
@@ -376,7 +399,7 @@ export default function POSPage() {
                 <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all"></div>
                 <CheckCircle2 size={14} className="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity" strokeWidth={3} />
               </div>
-              <span className="text-xs font-black tracking-widest text-gray-500 group-hover:text-gray-800 uppercase transition-colors">Apply 18% GST</span>
+              <span className="text-xs font-black tracking-widest text-gray-500 group-hover:text-gray-800 uppercase transition-colors">Apply {storeSettings.gstPercentage || 0}% Tax</span>
             </label>
             <div className="relative group w-28">
               <Percent size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-rose-400" />
@@ -385,7 +408,6 @@ export default function POSPage() {
           </div>
 
           <div className="px-4 sm:px-6 py-4 grid grid-cols-4 gap-2">
-            {/* 📓 NAYA: Added Khata Option in Payment Methods Grid */}
             {[
               {id: 'Cash', icon: Banknote}, 
               {id: 'Card', icon: CreditCard}, 
@@ -438,8 +460,9 @@ export default function POSPage() {
               
               <div className="p-8 pt-10 font-mono text-gray-800 text-xs">
                 <div className="text-center mb-6">
-                  <h2 className="text-3xl font-black mb-1 tracking-tighter text-gray-900">NexPOS<span className="text-emerald-500">.</span></h2>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Enterprise Retail Hub</p>
+                  {/* ⚙️ DYNAMIC STORE NAME */}
+                  <h2 className="text-3xl font-black mb-1 tracking-tighter text-gray-900">{storeSettings?.storeName || 'NexPOS'}<span className="text-emerald-500">.</span></h2>
+                  {storeSettings?.storeAddress && <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{storeSettings.storeAddress}</p>}
                 </div>
                 
                 <div className="border-y-2 border-dashed border-gray-300 py-3 mb-4 space-y-2">
@@ -473,7 +496,7 @@ export default function POSPage() {
 
                 <div className="border-t-2 border-dashed border-gray-300 pt-3 mb-4 space-y-2">
                   <div className="flex justify-between text-gray-600 font-bold"><span>Subtotal</span> <span>₹{receiptData.subTotal}</span></div>
-                  {receiptData.taxAmount > 0 && <div className="flex justify-between text-gray-600 font-bold"><span>GST (18%)</span> <span>+₹{receiptData.taxAmount}</span></div>}
+                  {receiptData.taxAmount > 0 && <div className="flex justify-between text-gray-600 font-bold"><span>Tax ({storeSettings.gstPercentage || 0}%)</span> <span>+₹{receiptData.taxAmount}</span></div>}
                   {receiptData.discount > 0 && <div className="flex justify-between text-rose-500 font-bold"><span>Discount</span> <span>-₹{receiptData.discount}</span></div>}
                   {receiptData.usedPoints > 0 && <div className="flex justify-between text-yellow-600 font-bold"><span>Points Redeemed</span> <span>-₹{receiptData.usedPoints}</span></div>}
                 </div>
