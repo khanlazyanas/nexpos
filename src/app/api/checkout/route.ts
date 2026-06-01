@@ -22,11 +22,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Cart empty hai' }, { status: 400 });
     }
 
+    // 📓 KHATA SECURITY CHECK: Udhaar bina 10 digit number ke nahi diya ja sakta
+    if (paymentMethod === 'Khata' && (!customerMobile || customerMobile.length < 10)) {
+      return NextResponse.json({ error: 'Khata ke liye mobile number zaroori hai!' }, { status: 400 });
+    }
+
     const orderItems = items.map((item: any) => ({
       product: item._id, name: item.name, price: item.price, quantity: item.cartQuantity
     }));
 
-    // 1. Order create karo
+    // 1. Order create karo (Isme Khata bhi as a paymentMethod save hoga)
     const newOrder = await Order.create({
       orderId,
       customerName: customerName || 'Guest',
@@ -44,27 +49,35 @@ export async function POST(req: Request) {
       });
     }
 
-    // 3. 🎁 NAYA: Loyalty Points & CRM Calculation
+    // 3. 🎁 NAYA: Loyalty Points & 📓 CRM KHATA Calculation
     let earnedPoints = 0;
     if (customerName && customerMobile) {
-      // Har ₹100 ki shopping par 1 Point
+      // Har ₹100 ki shopping par 1 Point (Khata walo ko bhi milega)
       earnedPoints = Math.floor(totalAmount / 100); 
 
       const existingCustomer = await Customer.findOne({ phone: customerMobile });
       
       if (existingCustomer) {
         existingCustomer.totalPurchases += totalAmount;
-        // Purane points me se used minus karo, aur naye earned jod do
+        
+        // Points Calculation
         const currentPoints = existingCustomer.loyaltyPoints || 0;
         existingCustomer.loyaltyPoints = Math.max(0, currentPoints - usedPoints) + earnedPoints;
+        
+        // 📓 KHATA MUTATION: Agar Payment Method 'Khata' hai, toh Due Amount badhao
+        if (paymentMethod === 'Khata') {
+          existingCustomer.dueAmount = (existingCustomer.dueAmount || 0) + totalAmount;
+        }
+
         await existingCustomer.save();
       } else {
+        // Naya Customer First Time Entry
         await Customer.create({
           name: customerName, 
           phone: customerMobile, 
           totalPurchases: totalAmount, 
-          dueAmount: 0,
-          loyaltyPoints: earnedPoints // Naye customer ko pehli shopping ke points mil gaye
+          dueAmount: paymentMethod === 'Khata' ? totalAmount : 0, // Pehla bill hi udhaar hai toh yahan aayega
+          loyaltyPoints: earnedPoints 
         });
       }
     }

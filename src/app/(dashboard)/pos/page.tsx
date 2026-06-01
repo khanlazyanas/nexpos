@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { IProduct } from '@/types';
 import { useCartStore } from '@/store/useCartStore';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, ScanBarcode, Receipt, Sparkles, Zap, Printer, CheckCircle2, X, User, Phone, Percent, Banknote, QrCode, AlertTriangle, ShieldCheck, Gift } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, ScanBarcode, Receipt, Sparkles, Zap, Printer, CheckCircle2, X, User, Phone, Percent, Banknote, QrCode, AlertTriangle, ShieldCheck, Gift, BookOpen } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Razorpay SDK Load
@@ -30,7 +30,7 @@ export default function POSPage() {
   const [applyTax, setApplyTax] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Cash');
 
-  // 🎁 NAYA: Loyalty Wallet States
+  // Loyalty Wallet States
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [usePoints, setUsePoints] = useState<boolean>(false);
 
@@ -44,7 +44,7 @@ export default function POSPage() {
     fetchProducts();
   }, []);
 
-  // 🤖 NAYA: Auto-fetch Customer Points on 10 digit entry
+  // Auto-fetch Customer Points on 10 digit entry
   useEffect(() => {
     const checkCustomer = async () => {
       if (customerMobile.length === 10) {
@@ -89,7 +89,8 @@ export default function POSPage() {
     const receiptLink = `${window.location.origin}/receipt/${receiptData.orderId}`;
     const message = `*Receipt from NexPOS*\n\n` +
                     `Order ID: #${receiptData.orderId.split('-')[1]}\n` +
-                    `Total Amount: ₹${receiptData.finalTotal}\n\n` +
+                    `Total Amount: ₹${receiptData.finalTotal}\n` +
+                    `${receiptData.paymentMethod === 'Khata' ? 'Status: UNPAID (Added to Khata)\n\n' : '\n'}` +
                     `Click the link below to view your digital receipt:\n${receiptLink}\n\n` +
                     `Thank you for shopping with us!`;
     const whatsappUrl = `https://wa.me/91${receiptData.customerMobile}?text=${encodeURIComponent(message)}`;
@@ -126,11 +127,10 @@ export default function POSPage() {
     }
   };
 
-  // 💰 NAYA: Math Logic for Points Redemption
   const subTotal = cartTotal();
   const taxAmount = applyTax ? Math.round(subTotal * 0.18) : 0; 
   let preFinalTotal = Math.max(0, subTotal + taxAmount - discount);
-  const pointsToRedeem = usePoints ? Math.min(walletBalance, preFinalTotal) : 0; // Don't use more points than bill value
+  const pointsToRedeem = usePoints ? Math.min(walletBalance, preFinalTotal) : 0; 
   const finalTotal = preFinalTotal - pointsToRedeem;
 
   const handleClearAll = () => {
@@ -166,7 +166,8 @@ export default function POSPage() {
         handleClearAll();
         fetchProducts(); 
         setShowReceipt(true);
-        toast.success("Transaction Completed!", { duration: 2000, style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
+        // Toast message dynamic for Khata
+        toast.success(paymentMethod === 'Khata' ? 'Added to Khata Successfully!' : "Transaction Completed!", { duration: 2000, style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
       } else {
         toast.error(data.error || 'Checkout Failed!');
       }
@@ -179,13 +180,21 @@ export default function POSPage() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+    
+    // 📓 KHATA UI SECURITY: Reject Khata process if mobile number is invalid
+    if (paymentMethod === 'Khata' && customerMobile.length < 10) {
+      toast.error('Mobile number required to open Khata!', { icon: '⚠️', style: { borderRadius: '12px', background: '#333', color: '#fff', fontWeight: 'bold' }});
+      return;
+    }
+
     setIsCheckingOut(true);
 
     const orderId = 'ORD-' + Math.floor(Math.random() * 1000000);
     const orderDate = new Date().toLocaleString('en-IN');
 
-    if (paymentMethod === 'Cash') {
-      await saveOrderToDatabase(orderId, orderDate);
+    // Khata aur Cash ke liye direct database save (No Razorpay popup)
+    if (paymentMethod === 'Cash' || paymentMethod === 'Khata') {
+      await saveOrderToDatabase(orderId, orderDate, paymentMethod === 'Khata' ? 'KHATA-DUE' : 'CASH');
       return;
     }
 
@@ -311,7 +320,7 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* 💳 NAYA: Customer Loyalty Wallet Widget */}
+        {/* Loyalty Wallet Widget */}
         {walletBalance > 0 && (
           <div className="mx-4 sm:mx-6 mb-2 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200 rounded-[1rem] flex items-center justify-between shadow-inner animate-in fade-in zoom-in-95 duration-300">
             <div className="flex items-center gap-3">
@@ -375,9 +384,15 @@ export default function POSPage() {
             </div>
           </div>
 
-          <div className="px-4 sm:px-6 py-4 flex gap-3">
-            {[{id: 'Cash', icon: Banknote}, {id: 'Card', icon: CreditCard}, {id: 'UPI', icon: QrCode}].map(method => (
-              <button key={method.id} onClick={()=>setPaymentMethod(method.id)} className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border-2 transition-all active:scale-95 ${paymentMethod === method.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-gray-100 text-gray-400 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-600'}`}>
+          <div className="px-4 sm:px-6 py-4 grid grid-cols-4 gap-2">
+            {/* 📓 NAYA: Added Khata Option in Payment Methods Grid */}
+            {[
+              {id: 'Cash', icon: Banknote}, 
+              {id: 'Card', icon: CreditCard}, 
+              {id: 'UPI', icon: QrCode}, 
+              {id: 'Khata', icon: BookOpen}
+            ].map(method => (
+              <button key={method.id} onClick={()=>setPaymentMethod(method.id)} className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border-2 transition-all active:scale-95 ${paymentMethod === method.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-gray-100 text-gray-400 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-600'}`}>
                 <method.icon size={18} strokeWidth={2.5} />
                 <span className="text-[10px] font-black tracking-widest uppercase">{method.id}</span>
               </button>
@@ -395,7 +410,7 @@ export default function POSPage() {
               <span className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter">₹{finalTotal.toLocaleString()}</span>
             </div>
             
-            <button onClick={handleCheckout} disabled={cart.length === 0 || isCheckingOut} className="group relative overflow-hidden w-full bg-gray-900 disabled:bg-gray-200 text-white hover:bg-emerald-600 py-4 sm:py-5 rounded-[1.5rem] shadow-[0_10px_20px_rgb(0,0,0,0.1)] hover:shadow-[0_15px_30px_rgba(16,185,129,0.3)] active:scale-[0.98] flex justify-center items-center gap-2 transition-all duration-300 disabled:shadow-none">
+            <button onClick={handleCheckout} disabled={cart.length === 0 || isCheckingOut} className={`group relative overflow-hidden w-full text-white py-4 sm:py-5 rounded-[1.5rem] shadow-[0_10px_20px_rgb(0,0,0,0.1)] active:scale-[0.98] flex justify-center items-center gap-2 transition-all duration-300 disabled:shadow-none ${paymentMethod === 'Khata' ? 'bg-indigo-600 hover:bg-indigo-500 hover:shadow-[0_15px_30px_rgba(79,70,229,0.3)]' : 'bg-gray-900 hover:bg-emerald-600 hover:shadow-[0_15px_30px_rgba(16,185,129,0.3)]'} disabled:bg-gray-200`}>
               {!isCheckingOut && <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 disabled:hidden"></div>}
               {isCheckingOut ? <Sparkles className="animate-spin relative z-10" size={20} /> : <ShieldCheck size={20} className="relative z-10" />}
               <span className="font-black text-sm tracking-widest uppercase relative z-10 disabled:text-gray-400">Process {paymentMethod}</span>
@@ -411,9 +426,11 @@ export default function POSPage() {
           
           <div className="w-full max-w-sm flex flex-col gap-4 animate-in slide-in-from-bottom-8 duration-500 max-h-screen overflow-y-auto custom-scrollbar pb-4">
             
-            <div className="no-print bg-emerald-500 text-white rounded-2xl p-4 flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 border border-emerald-400 mt-4 shrink-0">
+            <div className={`no-print text-white rounded-2xl p-4 flex items-center justify-center gap-3 shadow-lg border mt-4 shrink-0 ${receiptData.paymentMethod === 'Khata' ? 'bg-indigo-500 shadow-indigo-500/20 border-indigo-400' : 'bg-emerald-500 shadow-emerald-500/20 border-emerald-400'}`}>
               <CheckCircle2 size={24} className="animate-bounce" />
-              <h2 className="font-black tracking-widest uppercase text-sm">Payment Verified</h2>
+              <h2 className="font-black tracking-widest uppercase text-sm">
+                {receiptData.paymentMethod === 'Khata' ? 'Added to Khata Due' : 'Payment Verified'}
+              </h2>
             </div>
 
             <div id="thermal-container" className="bg-white rounded-t-xl rounded-b-sm shadow-2xl relative overflow-hidden pb-4 shrink-0">
@@ -458,21 +475,18 @@ export default function POSPage() {
                   <div className="flex justify-between text-gray-600 font-bold"><span>Subtotal</span> <span>₹{receiptData.subTotal}</span></div>
                   {receiptData.taxAmount > 0 && <div className="flex justify-between text-gray-600 font-bold"><span>GST (18%)</span> <span>+₹{receiptData.taxAmount}</span></div>}
                   {receiptData.discount > 0 && <div className="flex justify-between text-rose-500 font-bold"><span>Discount</span> <span>-₹{receiptData.discount}</span></div>}
-                  
-                  {/* 🎁 NAYA: Points Receipt UI */}
                   {receiptData.usedPoints > 0 && <div className="flex justify-between text-yellow-600 font-bold"><span>Points Redeemed</span> <span>-₹{receiptData.usedPoints}</span></div>}
                 </div>
 
-                <div className="bg-gray-100 p-3 rounded-lg flex justify-between items-center font-black text-base mb-6 border border-gray-200">
-                  <span className="tracking-widest uppercase">Total Paid</span>
+                <div className={`p-3 rounded-lg flex justify-between items-center font-black text-base mb-6 border ${receiptData.paymentMethod === 'Khata' ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-gray-100 border-gray-200 text-gray-900'}`}>
+                  <span className="tracking-widest uppercase">{receiptData.paymentMethod === 'Khata' ? 'Khata Balance Due' : 'Total Paid'}</span>
                   <span className="text-xl">₹{receiptData.finalTotal}</span>
                 </div>
 
                 <div className="text-center flex flex-col items-center">
                   <QrCode size={48} className="text-gray-900 mb-2 opacity-80" />
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black border border-gray-300 px-2 py-0.5 rounded-md mb-3">{receiptData.paymentMethod} TXN</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black border border-gray-300 px-2 py-0.5 rounded-md mb-3">{receiptData.paymentMethod} {receiptData.paymentMethod === 'Khata' ? 'ENTRY' : 'TXN'}</p>
                   
-                  {/* 🎁 NAYA: Points Earned Message */}
                   {receiptData.earnedPoints > 0 && (
                      <div className="mb-3 px-3 py-1.5 border border-dashed border-gray-300 rounded-md">
                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Wow! You Earned</p>
