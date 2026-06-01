@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import { IndianRupee, ShoppingBag, Package, AlertTriangle, Activity, RefreshCw, BarChart3, Loader2, Plus, Receipt, Banknote, CreditCard, Bot, Sparkles, Info, CheckCircle2, Zap } from 'lucide-react';
+import { IndianRupee, ShoppingBag, Package, AlertTriangle, Activity, RefreshCw, BarChart3, Loader2, Plus, Receipt, Banknote, CreditCard, Bot, Sparkles, Info, CheckCircle2, Zap, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
@@ -40,6 +40,36 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // 📊 NAYA: Handle CSV Export Logic (Bina kisi external library ke)
+  const handleExport = async () => {
+    try {
+      toast.loading('Generating CA Report...', { id: 'export-toast' });
+      
+      const res = await fetch('/api/export');
+      if (!res.ok) throw new Error('Failed to export');
+      
+      // Binary (Blob) data ko read karo
+      const blob = await res.blob();
+      
+      // Browser memory me ek temporary URL banao aur download trigger karo
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // API se aaya hua default filename ya naya filename do
+      a.download = `NexPOS_GST_Report_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.csv`; 
+      document.body.appendChild(a);
+      a.click();
+      
+      // Memory clean up
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Report Downloaded Successfully!', { id: 'export-toast', style: { background: '#10b981', color: '#fff', fontWeight: 'bold', borderRadius: '12px' }});
+    } catch (error) {
+      toast.error('Export failed. Please try again.', { id: 'export-toast' });
+    }
+  };
 
   const handleRestock = async (productId: string) => {
     const qty = restockValues[productId];
@@ -107,14 +137,25 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <button 
-          onClick={() => fetchStats(true)}
-          disabled={loading || refreshing}
-          className="group self-start sm:self-center p-4 bg-white/80 backdrop-blur-md border border-white shadow-[0_8px_20px_rgb(0,0,0,0.04)] hover:shadow-lg hover:border-emerald-100 text-gray-600 hover:text-emerald-600 rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {refreshing ? <Loader2 size={18} className="animate-spin text-emerald-500" /> : <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />}
-          <span className="text-xs font-black tracking-widest uppercase md:hidden">Sync</span>
-        </button>
+        {/* 🚀 NAYA: Action Buttons (Export + Sync) */}
+        <div className="flex items-center gap-3 self-start sm:self-center">
+          <button 
+            onClick={handleExport}
+            className="group p-4 bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_8px_20px_rgba(16,185,129,0.3)] hover:shadow-lg rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Download size={18} className="group-hover:-translate-y-1 transition-transform" />
+            <span className="text-xs font-black tracking-widest uppercase hidden md:inline">Export CSV</span>
+          </button>
+
+          <button 
+            onClick={() => fetchStats(true)}
+            disabled={loading || refreshing}
+            className="group p-4 bg-white/80 backdrop-blur-md border border-white shadow-[0_8px_20px_rgb(0,0,0,0.04)] hover:shadow-lg hover:border-emerald-100 text-gray-600 hover:text-emerald-600 rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {refreshing ? <Loader2 size={18} className="animate-spin text-emerald-500" /> : <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-500" />}
+            <span className="text-xs font-black tracking-widest uppercase md:hidden">Sync</span>
+          </button>
+        </div>
       </div>
 
       {loading ? (
