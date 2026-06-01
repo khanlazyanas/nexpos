@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react'; // 🔐 NAYA: Auth Hook
+import { useSession } from 'next-auth/react'; 
 import { Search, Users, Loader2, IndianRupee, Phone, UserCheck, WalletCards, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function CustomersPage() {
-  const { data: session, status } = useSession(); // 🔐 Session nikalna
+  const { data: session, status } = useSession(); 
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,8 +42,11 @@ export default function CustomersPage() {
     return <div className="h-[80vh] flex justify-center items-center"><Loader2 size={48} className="animate-spin text-emerald-500" /></div>;
   }
 
-  // Yahan hum check kar rahe hain ki role Admin hai ya nahi (email check as fallback security)
-  const isAdmin = session?.user?.role === 'Admin' || session?.user?.email === 'admin@gmail.com';
+  // 🛠️ FIX: TypeScript Vercel Build Error Bypass
+  // TypeScript ko bol rahe hain ki "session.user ko 'any' maan lo, main janta hu isme kya hai"
+  const user = session?.user as any; 
+  
+  const isAdmin = user?.role === 'Admin' || user?.email === 'admin@gmail.com';
 
   if (!isAdmin) {
     return (
@@ -210,7 +213,7 @@ export default function CustomersPage() {
                       )}
                     </td>
 
-                    {/* 📓 NAYA: Settle Khata Button (Only visible if Due > 0) */}
+                    {/* Admin Settle Khata Button */}
                     <td className="px-8 py-5">
                       {customer.dueAmount > 0 ? (
                         <div className="flex items-center justify-center gap-2">
