@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, User, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, User, Sparkles, AlertCircle, CheckCircle2, Shield } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('User'); // Added role state with default value
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,8 +25,8 @@ export default function RegisterPage() {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // 🛠️ YAHAN DHYAN DEIN: Dropdown hat gaya hai, role default 'Admin' hi jayega
-        body: JSON.stringify({ name, email, password, role: 'Admin' }),
+        // Passing the dynamically selected role from the dropdown
+        body: JSON.stringify({ name, email, password, role }),
       });
 
       const data = await res.json();
@@ -34,7 +35,7 @@ export default function RegisterPage() {
         setError(data.error || 'Failed to create account. Please try again.');
         setLoading(false);
       } else {
-        setSuccess('Workspace Created Successfully! Redirecting...');
+        setSuccess('Registered successfully! Redirecting...');
         setLoading(false);
         
         setTimeout(() => {
@@ -64,10 +65,10 @@ export default function RegisterPage() {
             <Sparkles size={28} />
           </div>
           <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-emerald-400 tracking-tighter">
-            Create Workspace
+            Create Account
           </h1>
           <p className="text-xs font-bold text-emerald-500/70 uppercase tracking-widest mt-1.5">
-            Register as Store Admin
+            Register your profile
           </p>
         </div>
 
@@ -96,7 +97,7 @@ export default function RegisterPage() {
             <div className="relative">
               <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
-                type="text" required placeholder="e.g. Anas Khan" value={name} onChange={(e) => setName(e.target.value)}
+                type="text" required placeholder="e.g. John Doe" value={name} onChange={(e) => setName(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3.5 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm sm:text-base shadow-inner"
               />
             </div>
@@ -104,11 +105,11 @@ export default function RegisterPage() {
 
           {/* Email */}
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Work Email</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
             <div className="relative">
               <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
-                type="email" required placeholder="e.g. admin@nexpos.com" value={email} onChange={(e) => setEmail(e.target.value)}
+                type="email" required placeholder="user@example.com" value={email} onChange={(e) => setEmail(e.target.value)}
                 autoCapitalize="none" autoComplete="email" spellCheck={false}
                 className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3.5 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold placeholder:text-slate-500 transition-all text-sm sm:text-base shadow-inner"
               />
@@ -127,6 +128,26 @@ export default function RegisterPage() {
             </div>
           </div>
 
+          {/* Role Selection Dropdown */}
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Account Role</label>
+            <div className="relative">
+              <Shield size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl py-3.5 pl-11 pr-4 outline-none focus:bg-white/10 focus:border-emerald-500 text-white font-bold transition-all text-sm sm:text-base shadow-inner appearance-none cursor-pointer"
+              >
+                <option value="User" className="bg-slate-900 text-white">User</option>
+                <option value="Admin" className="bg-slate-900 text-white">Admin</option>
+              </select>
+              {/* Custom arrow for the dropdown */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </div>
+
           {/* Submit Button */}
           <div className="pt-4">
             <button 
@@ -137,7 +158,7 @@ export default function RegisterPage() {
                 <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"></div>
               )}
               <span className="relative z-10 text-sm sm:text-base">
-                {loading ? 'Creating Workspace...' : 'Create Admin Account'}
+                {loading ? 'Processing...' : 'Create Account'}
               </span>
             </button>
           </div>
