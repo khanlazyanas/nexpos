@@ -25,14 +25,19 @@ export default function RegisterPage() {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Passing the dynamically selected role from the dropdown
         body: JSON.stringify({ name, email, password, role }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create account. Please try again.');
+        // Intercepting the Hindi message coming from the backend and replacing it with English
+        let errorMessage = data.error;
+        if (errorMessage === 'Ye Email pehle se registered hai!' || errorMessage?.includes('pehle se')) {
+          errorMessage = 'This email is already registered. Please use a different email or log in.';
+        }
+        
+        setError(errorMessage || 'Failed to create account. Please try again.');
         setLoading(false);
       } else {
         setSuccess('Account registered successfully! Redirecting...');
