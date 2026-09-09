@@ -61,7 +61,6 @@ export default function POSPage() {
 
       if (setRes && setRes.ok) {
         const setData = await setRes.json();
-        // Check if data exists and is an object, not array
         if (setData && !Array.isArray(setData) && setData.storeName) {
           setStoreSettings({
             storeName: setData.storeName,
@@ -69,7 +68,6 @@ export default function POSPage() {
             storeAddress: setData.storeAddress || ''
           });
         } else if (Array.isArray(setData) && setData.length > 0) {
-          // Fallback if settings returned as array
           setStoreSettings({
              storeName: setData[0].storeName || 'NexPOS',
              gstPercentage: setData[0].gstPercentage || 0,
@@ -156,7 +154,6 @@ export default function POSPage() {
 
   // ⚙️ DYNAMIC MATH LOGIC
   const subTotal = cartTotal();
-  // Safe calculation to ensure no NaN errors if gstPercentage is missing
   const activeTaxRate = storeSettings.gstPercentage || 0;
   const taxAmount = applyTax ? Math.round(subTotal * (activeTaxRate / 100)) : 0; 
   let preFinalTotal = Math.max(0, subTotal + taxAmount - discount);
@@ -273,12 +270,12 @@ export default function POSPage() {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-100px)] relative z-10 animate-in fade-in duration-500 pb-10 lg:pb-0">
+    <div className="flex flex-col lg:flex-row gap-6 min-h-0 lg:h-[calc(100dvh-100px)] relative z-10 animate-in fade-in duration-500 pb-10 lg:pb-0">
       
       <Toaster />
 
       {/* ================= LEFT SIDE: Terminal ================= */}
-      <div className="h-[60vh] shrink-0 lg:shrink lg:h-full lg:flex-1 flex flex-col bg-white/50 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
+      <div className="h-[60dvh] min-h-0 shrink-0 lg:shrink lg:h-full lg:flex-1 flex flex-col bg-white/50 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
         
         {/* Terminal Header */}
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-white/60 bg-white/40 shrink-0 flex flex-col sm:flex-row gap-4 justify-between items-center z-10">
@@ -302,7 +299,7 @@ export default function POSPage() {
         </div>
 
         {/* Products Grid */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-gray-50/30">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-gray-50/30">
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">{[1, 2, 3, 4, 5, 6, 7, 8].map(i => <ProductSkeleton key={i} />)}</div>
           ) : (
@@ -327,7 +324,7 @@ export default function POSPage() {
       </div>
 
       {/* ================= RIGHT SIDE: Smart Ledger ================= */}
-      <div className="w-full flex-1 lg:h-full lg:w-[420px] xl:w-[440px] flex flex-col bg-white/70 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
+      <div className="w-full flex-1 min-h-0 lg:h-full lg:w-[420px] xl:w-[440px] flex flex-col bg-white/70 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
         
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 bg-white/60 shrink-0 flex justify-between items-center">
           <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight flex items-center gap-2"><Receipt size={20} className="text-emerald-500" /> Active Ledger</h2>
@@ -346,7 +343,7 @@ export default function POSPage() {
         </div>
 
         {walletBalance > 0 && (
-          <div className="mx-4 sm:mx-6 mb-2 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200 rounded-[1rem] flex items-center justify-between shadow-inner animate-in fade-in zoom-in-95 duration-300">
+          <div className="mx-4 sm:mx-6 mb-2 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200 rounded-[1rem] flex items-center justify-between shadow-inner animate-in fade-in zoom-in-95 duration-300 shrink-0">
             <div className="flex items-center gap-3">
               <div className="bg-yellow-400 p-2 rounded-xl text-white shadow-sm"><Gift size={16} /></div>
               <div>
@@ -361,9 +358,9 @@ export default function POSPage() {
           </div>
         )}
 
-        <div className="border-b border-gray-100"></div>
+        <div className="border-b border-gray-100 shrink-0"></div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar bg-white/30 min-h-[150px]">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar bg-white/30">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-3">
               <div className="bg-gray-50 p-6 rounded-full border border-gray-100"><ShoppingCart size={40} strokeWidth={1.5} /></div>
