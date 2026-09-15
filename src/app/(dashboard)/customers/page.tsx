@@ -37,28 +37,12 @@ export default function CustomersPage() {
     }
   }, [status]);
 
-  // 🔐 ADMIN SECURITY CHECK
   if (status === 'loading') {
     return <div className="h-[80vh] flex justify-center items-center"><Loader2 size={48} className="animate-spin text-emerald-500" /></div>;
   }
 
-  // 🛠️ FIX: TypeScript Vercel Build Error Bypass
-  // TypeScript ko bol rahe hain ki "session.user ko 'any' maan lo, main janta hu isme kya hai"
   const user = session?.user as any; 
-  
   const isAdmin = user?.role === 'Admin' || user?.email === 'admin@gmail.com';
-
-  if (!isAdmin) {
-    return (
-      <div className="h-[80vh] flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500 relative z-10">
-        <ShieldAlert size={80} className="text-rose-500 mb-6 animate-pulse drop-shadow-[0_10px_20px_rgba(244,63,94,0.3)]" />
-        <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tighter">Access Denied</h1>
-        <p className="text-gray-500 font-bold text-sm bg-white/60 px-6 py-3 rounded-2xl border border-gray-100 shadow-sm backdrop-blur-md">
-          Only Administrators can view and manage the Khata CRM.
-        </p>
-      </div>
-    );
-  }
 
   // 📓 Khata Settle Function
   const handleClearDue = async (customerId: string, currentDue: number) => {
@@ -119,7 +103,8 @@ export default function CustomersPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/40 backdrop-blur-xl p-6 md:p-8 rounded-[2rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div>
           <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-b from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter flex items-center gap-3">
-            Customers CRM <span className="bg-emerald-100 text-emerald-600 text-sm px-3 py-1 rounded-xl border border-emerald-200 shadow-inner flex items-center gap-1"><ShieldAlert size={14}/> Admin Only</span>
+            Customers CRM 
+            {!isAdmin && <span className="bg-emerald-100 text-emerald-600 text-sm px-3 py-1 rounded-xl border border-emerald-200 shadow-inner flex items-center gap-1">Staff View</span>}
           </h1>
           <p className="text-gray-500 font-bold flex items-center gap-2 mt-2 text-sm md:text-base">
             Manage regular clients and secure Khata settlements <WalletCards size={18} className="text-emerald-500" />
@@ -149,20 +134,21 @@ export default function CustomersPage() {
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest">Customer Details</th>
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-center">Lifetime Value</th>
                 <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-right">Khata Due</th>
-                <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-center">Admin Settlement</th>
+                {/* 🔒 Sirf Admin ko ye column dikhega */}
+                {isAdmin && <th className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-center">Admin Settlement</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="py-24 text-center">
+                  <td colSpan={isAdmin ? 4 : 3} className="py-24 text-center">
                     <Loader2 className="animate-spin mx-auto text-emerald-500 mb-3" size={40} />
                     <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Syncing Secure Database...</p>
                   </td>
                 </tr>
               ) : filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-24 text-center text-gray-400">
+                  <td colSpan={isAdmin ? 4 : 3} className="py-24 text-center text-gray-400">
                     <Users size={48} className="mx-auto mb-3 opacity-20" />
                     <p className="font-bold text-sm">No customers found. Process orders to build your CRM!</p>
                   </td>
@@ -213,31 +199,33 @@ export default function CustomersPage() {
                       )}
                     </td>
 
-                    {/* Admin Settle Khata Button */}
-                    <td className="px-8 py-5">
-                      {customer.dueAmount > 0 ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <input 
-                            type="number" 
-                            min="1" 
-                            max={customer.dueAmount}
-                            placeholder="₹ Amount"
-                            value={settleAmounts[customer._id] || ''}
-                            onChange={(e) => setSettleAmounts({ ...settleAmounts, [customer._id]: e.target.value })}
-                            className="w-24 bg-white/80 border border-gray-200 rounded-xl py-2 px-3 text-xs font-bold outline-none focus:border-indigo-400 text-gray-800 shadow-sm text-center placeholder:text-gray-300"
-                          />
-                          <button 
-                            onClick={() => handleClearDue(customer._id, customer.dueAmount)}
-                            disabled={isSettling === customer._id}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-black tracking-widest uppercase transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                          >
-                            {isSettling === customer._id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Settle
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest">No Actions</div>
-                      )}
-                    </td>
+                    {/* 🔒 Admin Settle Khata Button (Sirf Admin ko dikhega) */}
+                    {isAdmin && (
+                      <td className="px-8 py-5">
+                        {customer.dueAmount > 0 ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <input 
+                              type="number" 
+                              min="1" 
+                              max={customer.dueAmount}
+                              placeholder="₹ Amount"
+                              value={settleAmounts[customer._id] || ''}
+                              onChange={(e) => setSettleAmounts({ ...settleAmounts, [customer._id]: e.target.value })}
+                              className="w-24 bg-white/80 border border-gray-200 rounded-xl py-2 px-3 text-xs font-bold outline-none focus:border-indigo-400 text-gray-800 shadow-sm text-center placeholder:text-gray-300"
+                            />
+                            <button 
+                              onClick={() => handleClearDue(customer._id, customer.dueAmount)}
+                              disabled={isSettling === customer._id}
+                              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-black tracking-widest uppercase transition-all shadow-md active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                              {isSettling === customer._id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Settle
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest">No Actions</div>
+                        )}
+                      </td>
+                    )}
 
                   </tr>
                 ))
@@ -246,7 +234,6 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
-
     </div>
   );
 }
