@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IProduct } from '@/types';
 import { useCartStore } from '@/store/useCartStore';
 import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, ScanBarcode, Receipt, Sparkles, Zap, Printer, CheckCircle2, X, User, Phone, Percent, Banknote, QrCode, AlertTriangle, ShieldCheck, Gift, BookOpen } from 'lucide-react';
@@ -41,10 +41,20 @@ export default function POSPage() {
   const [receiptData, setReceiptData] = useState<any>(null);
 
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCartStore();
+  
+  // 🔥 AUTO-SCROLL REF FOR CART ITEMS
+  const cartEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchProductsAndSettings();
   }, []);
+
+  // 🚀 Auto-scroll to bottom whenever a new item is added to cart
+  useEffect(() => {
+    if (cart.length > 0) {
+      cartEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [cart]);
 
   // ⚙️ Fetch settings along with products safely
   const fetchProductsAndSettings = async () => {
@@ -323,80 +333,87 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* ================= RIGHT SIDE: Smart Ledger ================= */}
+      {/* ================= RIGHT SIDE: Smart Ledger (COMPACT VIEW FOR SMALL SCREENS) ================= */}
       <div className="w-full flex-1 min-h-0 lg:h-full lg:w-[420px] xl:w-[440px] flex flex-col bg-white/70 backdrop-blur-3xl backdrop-saturate-200 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] border border-white overflow-hidden">
         
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 bg-white/60 shrink-0 flex justify-between items-center">
-          <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight flex items-center gap-2"><Receipt size={20} className="text-emerald-500" /> Active Ledger</h2>
-          <button onClick={handleClearAll} className="bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all active:scale-95 border border-rose-100 hover:border-rose-500">Clear</button>
+        {/* Adjusted padding (py-3 instead of py-5) */}
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 bg-white/60 shrink-0 flex justify-between items-center">
+          <h2 className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2"><Receipt size={18} className="text-emerald-500" /> Active Ledger</h2>
+          <button onClick={handleClearAll} className="bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all active:scale-95 border border-rose-100 hover:border-rose-500">Clear</button>
         </div>
 
-        <div className="px-4 sm:px-6 pt-4 pb-2 bg-gray-50/50 shrink-0 flex gap-3">
+        {/* Adjusted padding (pt-3 pb-2) */}
+        <div className="px-4 sm:px-5 pt-3 pb-2 bg-gray-50/50 shrink-0 flex gap-3">
           <div className="flex-1 relative group">
             <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-            <input type="text" placeholder="Customer Name" value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm" />
+            <input type="text" placeholder="Customer Name" value={customerName} onChange={(e)=>setCustomerName(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-1.5 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm" />
           </div>
           <div className="flex-1 relative group">
             <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-            <input type="text" placeholder="Mobile No. (10-digit)" maxLength={10} value={customerMobile} onChange={(e)=>setCustomerMobile(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm" />
+            <input type="text" placeholder="Mobile No. (10-digit)" maxLength={10} value={customerMobile} onChange={(e)=>setCustomerMobile(e.target.value)} className="w-full bg-white border border-gray-200 rounded-xl py-1.5 pl-9 pr-3 text-xs font-bold text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all shadow-sm" />
           </div>
         </div>
 
         {walletBalance > 0 && (
-          <div className="mx-4 sm:mx-6 mb-2 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200 rounded-[1rem] flex items-center justify-between shadow-inner animate-in fade-in zoom-in-95 duration-300 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="bg-yellow-400 p-2 rounded-xl text-white shadow-sm"><Gift size={16} /></div>
+          <div className="mx-4 sm:mx-5 mb-2 p-2.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-yellow-200 rounded-xl flex items-center justify-between shadow-inner animate-in fade-in zoom-in-95 duration-300 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-yellow-400 p-1.5 rounded-lg text-white shadow-sm"><Gift size={14} /></div>
               <div>
-                <p className="text-[10px] font-black text-yellow-800 tracking-widest uppercase">Loyalty Wallet</p>
-                <p className="text-xs font-bold text-yellow-600">{walletBalance} Points Available</p>
+                <p className="text-[9px] font-black text-yellow-800 tracking-widest uppercase">Loyalty Wallet</p>
+                <p className="text-[11px] font-bold text-yellow-600">{walletBalance} Points Available</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer active:scale-95 transition-transform">
               <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="sr-only peer" />
-              <div className="w-10 h-5 bg-yellow-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500 shadow-sm border border-yellow-300/50"></div>
+              <div className="w-9 h-4.5 bg-yellow-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-yellow-500 shadow-sm border border-yellow-300/50"></div>
             </label>
           </div>
         )}
 
         <div className="border-b border-gray-100 shrink-0"></div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-3 custom-scrollbar bg-white/30">
+        {/* 🔥 Cart Items List: Added pb-10 so the last item clears the shadow curve */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 pb-10 space-y-2 custom-scrollbar bg-white/30">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-3">
               <div className="bg-gray-50 p-6 rounded-full border border-gray-100"><ShoppingCart size={40} strokeWidth={1.5} /></div>
               <p className="text-sm font-bold tracking-widest uppercase">Cart is Empty</p>
             </div>
           ) : (
-            cart.map(item => (
-              <div key={item._id} className="group flex flex-col p-4 bg-white border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md hover:border-emerald-100 rounded-2xl transition-all">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-black text-gray-800 text-sm line-clamp-1 pr-4">{item.name}</h4>
-                  <button onClick={() => removeFromCart(item._id)} className="text-gray-300 hover:text-rose-500 transition-colors bg-gray-50 hover:bg-rose-50 p-1.5 rounded-lg"><Trash2 size={14} /></button>
-                </div>
-                <div className="flex justify-between items-center">
-                  <p className="font-black text-emerald-600 text-base tracking-tight">₹{(item.price * item.cartQuantity).toLocaleString()}</p>
-                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 p-1 rounded-xl">
-                    <button onClick={() => updateQuantity(item._id, item.cartQuantity - 1)} className="p-1.5 hover:bg-white rounded-lg text-gray-500 hover:text-gray-900 transition-colors shadow-sm"><Minus size={14} strokeWidth={3} /></button>
-                    <span className="w-8 text-center font-black text-sm text-gray-800">{item.cartQuantity}</span>
-                    <button onClick={() => { if(item.cartQuantity < item.stock_quantity) updateQuantity(item._id, item.cartQuantity + 1); else toast.error('Stock Limit Reached!'); }} className="p-1.5 hover:bg-white rounded-lg text-gray-500 hover:text-emerald-600 transition-colors shadow-sm"><Plus size={14} strokeWidth={3} /></button>
+            <>
+              {cart.map(item => (
+                <div key={item._id} className="group flex flex-col p-3.5 bg-white border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md hover:border-emerald-100 rounded-2xl transition-all">
+                  <div className="flex justify-between items-start mb-2.5">
+                    <h4 className="font-black text-gray-800 text-sm line-clamp-1 pr-4">{item.name}</h4>
+                    <button onClick={() => removeFromCart(item._id)} className="text-gray-300 hover:text-rose-500 transition-colors bg-gray-50 hover:bg-rose-50 p-1.5 rounded-lg"><Trash2 size={14} /></button>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="font-black text-emerald-600 text-base tracking-tight">₹{(item.price * item.cartQuantity).toLocaleString()}</p>
+                    <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 p-1 rounded-xl">
+                      <button onClick={() => updateQuantity(item._id, item.cartQuantity - 1)} className="p-1.5 hover:bg-white rounded-lg text-gray-500 hover:text-gray-900 transition-colors shadow-sm"><Minus size={14} strokeWidth={3} /></button>
+                      <span className="w-8 text-center font-black text-sm text-gray-800">{item.cartQuantity}</span>
+                      <button onClick={() => { if(item.cartQuantity < item.stock_quantity) updateQuantity(item._id, item.cartQuantity + 1); else toast.error('Stock Limit Reached!'); }} className="p-1.5 hover:bg-white rounded-lg text-gray-500 hover:text-emerald-600 transition-colors shadow-sm"><Plus size={14} strokeWidth={3} /></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+              {/* 🔥 This hidden div ensures the scroll always hits the absolute bottom */}
+              <div ref={cartEndRef} className="h-1" />
+            </>
           )}
         </div>
 
         {/* Financial Calculation & Checkout Engine */}
-        <div className="bg-white border-t border-gray-100 shrink-0 rounded-t-3xl shadow-[0_-10px_40px_rgb(0,0,0,0.03)] z-20">
+        <div className="bg-white border-t border-gray-100 shrink-0 rounded-t-3xl shadow-[0_-10px_40px_rgb(0,0,0,0.03)] z-20 relative">
           
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <label className="flex items-center gap-2 cursor-pointer group">
               <div className="relative flex items-center justify-center">
                 <input type="checkbox" checked={applyTax} onChange={(e)=>setApplyTax(e.target.checked)} className="peer sr-only" />
                 <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all"></div>
                 <CheckCircle2 size={14} className="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity" strokeWidth={3} />
               </div>
-              <span className="text-xs font-black tracking-widest text-gray-500 group-hover:text-gray-800 uppercase transition-colors">Apply {storeSettings.gstPercentage || 0}% Tax</span>
+              <span className="text-[11px] font-black tracking-widest text-gray-500 group-hover:text-gray-800 uppercase transition-colors">Apply {storeSettings.gstPercentage || 0}% Tax</span>
             </label>
             <div className="relative group w-28">
               <Percent size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-rose-400" />
@@ -404,24 +421,24 @@ export default function POSPage() {
             </div>
           </div>
 
-          <div className="px-4 sm:px-6 py-4 grid grid-cols-4 gap-2">
+          <div className="px-4 sm:px-5 py-3 grid grid-cols-4 gap-2">
             {[
               {id: 'Cash', icon: Banknote}, 
               {id: 'Card', icon: CreditCard}, 
               {id: 'UPI', icon: QrCode}, 
               {id: 'Khata', icon: BookOpen}
             ].map(method => (
-              <button key={method.id} onClick={()=>setPaymentMethod(method.id)} className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border-2 transition-all active:scale-95 ${paymentMethod === method.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-gray-100 text-gray-400 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-600'}`}>
-                <method.icon size={18} strokeWidth={2.5} />
-                <span className="text-[10px] font-black tracking-widest uppercase">{method.id}</span>
+              <button key={method.id} onClick={()=>setPaymentMethod(method.id)} className={`flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-2xl border-2 transition-all active:scale-95 ${paymentMethod === method.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-gray-100 text-gray-400 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-600'}`}>
+                <method.icon size={16} strokeWidth={2.5} />
+                <span className="text-[9px] font-black tracking-widest uppercase">{method.id}</span>
               </button>
             ))}
           </div>
 
-          <div className="px-4 sm:px-6 pb-6 pt-2">
-            <div className="flex justify-between items-end mb-4 px-2">
+          <div className="px-4 sm:px-5 pb-4 pt-1">
+            <div className="flex justify-between items-end mb-3 px-2">
               <div>
-                <span className="text-gray-400 font-black uppercase tracking-widest text-xs">Final Total</span>
+                <span className="text-gray-400 font-black uppercase tracking-widest text-[11px]">Final Total</span>
                 {usePoints && pointsToRedeem > 0 && (
                   <p className="text-[10px] font-bold text-yellow-500 mt-1 uppercase tracking-widest animate-pulse">-₹{pointsToRedeem} Points Used</p>
                 )}
@@ -429,10 +446,10 @@ export default function POSPage() {
               <span className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent tracking-tighter">₹{finalTotal.toLocaleString()}</span>
             </div>
             
-            <button onClick={handleCheckout} disabled={cart.length === 0 || isCheckingOut} className={`group relative overflow-hidden w-full text-white py-4 sm:py-5 rounded-[1.5rem] shadow-[0_10px_20px_rgb(0,0,0,0.1)] active:scale-[0.98] flex justify-center items-center gap-2 transition-all duration-300 disabled:shadow-none ${paymentMethod === 'Khata' ? 'bg-indigo-600 hover:bg-indigo-500 hover:shadow-[0_15px_30px_rgba(79,70,229,0.3)]' : 'bg-gray-900 hover:bg-emerald-600 hover:shadow-[0_15px_30px_rgba(16,185,129,0.3)]'} disabled:bg-gray-200`}>
+            <button onClick={handleCheckout} disabled={cart.length === 0 || isCheckingOut} className={`group relative overflow-hidden w-full text-white py-3.5 sm:py-4 rounded-2xl shadow-[0_10px_20px_rgb(0,0,0,0.1)] active:scale-[0.98] flex justify-center items-center gap-2 transition-all duration-300 disabled:shadow-none ${paymentMethod === 'Khata' ? 'bg-indigo-600 hover:bg-indigo-500 hover:shadow-[0_15px_30px_rgba(79,70,229,0.3)]' : 'bg-gray-900 hover:bg-emerald-600 hover:shadow-[0_15px_30px_rgba(16,185,129,0.3)]'} disabled:bg-gray-200`}>
               {!isCheckingOut && <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 disabled:hidden"></div>}
-              {isCheckingOut ? <Sparkles className="animate-spin relative z-10" size={20} /> : <ShieldCheck size={20} className="relative z-10" />}
-              <span className="font-black text-sm tracking-widest uppercase relative z-10 disabled:text-gray-400">Process {paymentMethod}</span>
+              {isCheckingOut ? <Sparkles className="animate-spin relative z-10" size={18} /> : <ShieldCheck size={18} className="relative z-10" />}
+              <span className="font-black text-[13px] tracking-widest uppercase relative z-10 disabled:text-gray-400">Process {paymentMethod}</span>
             </button>
           </div>
         </div>
@@ -457,7 +474,6 @@ export default function POSPage() {
               
               <div className="p-8 pt-10 font-mono text-gray-800 text-xs">
                 <div className="text-center mb-6">
-                  {/* ⚙️ DYNAMIC STORE NAME */}
                   <h2 className="text-3xl font-black mb-1 tracking-tighter text-gray-900">{storeSettings?.storeName || 'NexPOS'}<span className="text-emerald-500">.</span></h2>
                   {storeSettings?.storeAddress && <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{storeSettings.storeAddress}</p>}
                 </div>
