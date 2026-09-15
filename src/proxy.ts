@@ -6,8 +6,8 @@ export default withAuth(
     const token = req.nextauth?.token; // 🛠️ SAFE: Accessing internal nextauth token payload
     const path = req.nextUrl.pathname;
 
-    // Admin Only Routes Rules
-    const isAdminRoute = path.startsWith("/inventory") || path.startsWith("/dashboard") || path.startsWith("/orders");
+    // Admin Only Routes Rules (Orders removed from here so Cashiers can access it)
+    const isAdminRoute = path.startsWith("/inventory") || path.startsWith("/dashboard");
 
     // 🛠️ DEBUG LOGS FOR TERMINAL: Isse turant pata chalega middleware me kya chal raha hai
     console.log("🛡️ [MIDDLEWARE MONITOR] Path:", path, "| User Role:", token?.role);
@@ -37,6 +37,6 @@ export const config = {
     "/pos", 
     "/inventory", 
     "/dashboard",
-    "/orders"
+    "/orders" 
   ]
 };
