@@ -375,8 +375,8 @@ export default function POSPage() {
 
         <div className="border-b border-gray-100 shrink-0"></div>
 
-        {/* 🔥 Scroll Container with Ref */}
-        <div ref={cartContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 pb-10 space-y-3 custom-scrollbar bg-white/30">
+        {/* 🔥 Scroll Container with Ref & COMPACT UI UPDATE */}
+        <div ref={cartContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 pb-10 space-y-2 custom-scrollbar bg-white/30">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-3">
               <div className="bg-gray-50 p-6 rounded-full border border-gray-100"><ShoppingCart size={40} strokeWidth={1.5} /></div>
@@ -384,18 +384,21 @@ export default function POSPage() {
             </div>
           ) : (
             cart.map(item => (
-              <div key={item._id} className="group flex flex-col p-4 bg-white border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md hover:border-emerald-100 rounded-2xl transition-all">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-black text-gray-800 text-sm line-clamp-1 pr-4">{item.name}</h4>
-                  <button onClick={() => removeFromCart(item._id)} className="text-gray-300 hover:text-rose-500 transition-colors bg-gray-50 hover:bg-rose-50 p-1.5 rounded-lg"><Trash2 size={14} /></button>
+              <div key={item._id} className="group flex items-center justify-between p-3 bg-white border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-md hover:border-emerald-100 rounded-xl transition-all">
+                {/* Product Name & Price in one compact flex row */}
+                <div className="flex flex-col flex-1 min-w-0 pr-3">
+                  <h4 className="font-black text-gray-800 text-xs sm:text-sm line-clamp-1">{item.name}</h4>
+                  <p className="font-bold text-emerald-600 text-[11px] sm:text-xs">₹{(item.price * item.cartQuantity).toLocaleString()}</p>
                 </div>
-                <div className="flex justify-between items-center">
-                  <p className="font-black text-emerald-600 text-base tracking-tight">₹{(item.price * item.cartQuantity).toLocaleString()}</p>
-                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 p-1 rounded-xl">
-                    <button onClick={() => updateQuantity(item._id, item.cartQuantity - 1)} className="p-1.5 hover:bg-white rounded-lg text-gray-500 hover:text-gray-900 transition-colors shadow-sm"><Minus size={14} strokeWidth={3} /></button>
-                    <span className="w-8 text-center font-black text-sm text-gray-800">{item.cartQuantity}</span>
-                    <button onClick={() => { if(item.cartQuantity < item.stock_quantity) updateQuantity(item._id, item.cartQuantity + 1); else toast.error('Stock Limit Reached!'); }} className="p-1.5 hover:bg-white rounded-lg text-gray-500 hover:text-emerald-600 transition-colors shadow-sm"><Plus size={14} strokeWidth={3} /></button>
+                
+                {/* Quantity Controls & Trash Action */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center bg-gray-50 border border-gray-100 rounded-lg overflow-hidden shadow-sm">
+                    <button onClick={() => updateQuantity(item._id, item.cartQuantity - 1)} className="px-2 py-1.5 hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-colors"><Minus size={12} strokeWidth={3} /></button>
+                    <span className="w-6 text-center font-black text-xs text-gray-800">{item.cartQuantity}</span>
+                    <button onClick={() => { if(item.cartQuantity < item.stock_quantity) updateQuantity(item._id, item.cartQuantity + 1); else toast.error('Stock Limit Reached!'); }} className="px-2 py-1.5 hover:bg-gray-200 text-gray-500 hover:text-emerald-600 transition-colors"><Plus size={12} strokeWidth={3} /></button>
                   </div>
+                  <button onClick={() => removeFromCart(item._id)} className="text-gray-300 hover:text-rose-500 transition-colors p-1.5 rounded-md hover:bg-rose-50"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))
