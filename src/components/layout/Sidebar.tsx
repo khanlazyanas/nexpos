@@ -58,9 +58,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     { name: 'Inventory', href: '/inventory', icon: Package, isProtected: true },
     { name: 'Order History', href: '/orders', icon: Receipt, isProtected: false },
     { name: 'Customers & Khata', href: '/customers', icon: Users, isProtected: false },
-    { name: 'Store Settings', href: '/settings', icon: Settings, isProtected: true },
-    { name: 'Shift Manager', href: '/shift', icon: Wallet, isProtected: true }, // Shift manager ko hide karne ke liye isProtected: true kar diya
-    { name: 'Staff Management', href: '/staff', icon: ShieldCheck, isProtected: true },
     { name: 'NexPOS Home', href: '/', icon: Home, isProtected: false },
   ];
 
@@ -150,7 +147,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         {/* 🧭 Navigation Menu */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
           {navItems
-            // 🔥 YAHAN HAI MAGIC: Agar item protected hai, toh sirf Admin ko dikhega, warna kisi aur (jaise Worker) ke liye hide ho jayega!
             .filter(item => !item.isProtected || isAdmin)
             .map((item) => {
             const isActive = pathname === item.href;
