@@ -20,7 +20,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const [selectedBranch, setSelectedBranch] = useState('Main Branch');
   const [isBranchMenuOpen, setIsBranchMenuOpen] = useState(false); // NAYA STATE CUSTOM DROPDOWN KE LIYE
 
-  const branches = ['Main Branch', 'Lucknow Hazratganj', 'Lucknow Gomti Nagar'];
+  // const branches = ['Main Branch', 'Lucknow Hazratganj', 'Lucknow Gomti Nagar'];
 
   useEffect(() => {
     // Page load hote hi browser ki cookie se active branch padho
@@ -94,9 +94,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
           {/* 🏪 NAYA: Premium Custom Branch Switcher */}
           <div className="relative z-50">
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Active Location</p>
+            {/* <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Active Location</p> */}
             
-            <button
+            {/* <button
               onClick={() => setIsBranchMenuOpen(!isBranchMenuOpen)}
               className={`w-full bg-white/70 backdrop-blur-md border hover:border-emerald-200 rounded-2xl py-3 px-4 flex items-center justify-between shadow-sm transition-all active:scale-[0.98] group ${isBranchMenuOpen ? 'border-emerald-300 ring-4 ring-emerald-500/10' : 'border-white'}`}
             >
@@ -113,7 +113,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 strokeWidth={3} 
                 className={`text-gray-400 transition-transform duration-300 ${isBranchMenuOpen ? 'rotate-180 text-emerald-500' : 'group-hover:text-emerald-500'}`} 
               />
-            </button>
+            </button> */}
 
             {/* Dropdown Menu & Overlay */}
             {isBranchMenuOpen && (
@@ -121,7 +121,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 {/* Invisible overlay outside click catch karne ke liye */}
                 <div className="fixed inset-0 z-40" onClick={() => setIsBranchMenuOpen(false)}></div>
                 
-                <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white/95 backdrop-blur-2xl border border-white shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200 p-1.5">
+                {/* <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white/95 backdrop-blur-2xl border border-white shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200 p-1.5">
                   {branches.map((branch) => (
                     <button
                       key={branch}
@@ -138,7 +138,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                       )}
                     </button>
                   ))}
-                </div>
+                </div> */}
               </>
             )}
           </div>
